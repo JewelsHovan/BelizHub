@@ -43,6 +43,7 @@ export default function App() {
         ))}
         <div className="pager">
           <button className="btn" style={{ visibility: tab === 0 ? 'hidden' : 'visible' }} onClick={() => setTab(tab - 1)}>Previous</button>
+          <span className="kbd"><kbd>←</kbd> <kbd>→</kbd> switch sections</span>
           <button className="btn primary" onClick={() => setTab(last ? 0 : tab + 1)}>{last ? 'Back to start' : `Next: ${TABS[tab + 1][1]}`}</button>
         </div>
       </main>

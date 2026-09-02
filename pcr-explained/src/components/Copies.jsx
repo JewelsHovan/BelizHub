@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { EXT, duplexesAt, counts, amplification } from '../lib/copies.js';
-import { sci } from '../lib/units.js';
+import { sci, sup } from '../lib/units.js';
 import Details from './Details.jsx';
 import Sources from './Sources.jsx';
 import s from './Copies.module.css';
@@ -52,7 +52,7 @@ function Chart({ E, N0 }) {
         {[0, 3, 6, 9, 12].map((e) => (
           <g key={e}>
             <line x1={L} x2={W - R} y1={y(10 ** e)} y2={y(10 ** e)} stroke="#E6EAE8" />
-            <text x={L - 4} y={y(10 ** e) + 3} textAnchor="end" fontSize="9" fill="#5A6470">10^{e}</text>
+            <text x={L - 4} y={y(10 ** e) + 3} textAnchor="end" fontSize="9" fill="#5A6470">10{sup(e)}</text>
           </g>
         ))}
         {[0, 5, 10, 15, 20, 25, 30, 35].map((n) => <text key={n} x={x(n)} y={H - 12} textAnchor="middle" fontSize="9" fill="#5A6470">{n}</text>)}

@@ -2,8 +2,20 @@
 .brand { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px 2px; max-width: 760px; margin: 0 auto; }
 .wordmark { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: -0.01em; }
 .sub { color: var(--ink-2); font-size: 13px; }
-.tabs { max-width: 760px; margin: 0 auto; display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 8px; }
+.hub { margin-left: auto; font-size: 13px; color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.hub::before { content: '\2190\00a0'; }
+.hub:hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule); }
+.wrap { position: relative; max-width: 760px; margin: 0 auto; }
+.wrap::before, .wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 28px; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+.wrap::before { left: 0; background: linear-gradient(to right, var(--paper), transparent); }
+.wrap::after { right: 0; background: linear-gradient(to left, var(--paper), transparent); }
+.fadeL::before, .fadeR::after { opacity: 1; }
+.tabs { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 8px; -webkit-overflow-scrolling: touch; }
 .tabs::-webkit-scrollbar { display: none; }
-.tab { flex: 0 0 auto; background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px 10px; font: 500 14px var(--font-body); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.tab { flex: 0 0 auto; background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px 10px; min-height: 40px; font: 500 14px var(--font-body); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .tab[aria-current] { color: var(--ink); border-bottom-color: var(--ink); }
 .num { font-family: var(--font-display); font-size: 13px; margin-right: 6px; }
+@media (max-width: 420px) {
+  .sub { display: none; }
+  .tab { padding: 10px 9px 11px; min-height: 44px; }
+}

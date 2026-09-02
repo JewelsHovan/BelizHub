@@ -43,7 +43,7 @@ Rules of thumb:
 
 **Vercel / Netlify / any static host**: build command `npm run build`, output `dist`. No config needed.
 
-**GitHub Pages**: this app is deployed as part of the [Beliz Hub](../README.md). The root `.github/workflows/pages.yml` runs the tests, builds with `VITE_BASE=/BelizHub/pcr-explained/`, and publishes on push to `main`. Live at https://jewelshovan.github.io/BelizHub/pcr-explained/
+**GitHub Pages**: this app is deployed as part of the [Beliz Hub](../README.md). The root `.github/workflows/pages.yml` runs the tests, builds with `VITE_BASE=/BelizHub/pcr-explained/`, and publishes on push to `main`. Live at https://julienhovan.com/BelizHub/pcr-explained/
 
 **Single-file artifact**: `npm run build:single`, then share `dist-single/index.html`. It uses relative asset paths and inlines JS and CSS; only the Google Fonts request goes to the network, and the fallback fonts are fine without it.
 

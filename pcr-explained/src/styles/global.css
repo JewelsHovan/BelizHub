@@ -20,7 +20,7 @@ p { margin: 0 0 12px; max-width: 66ch; }
 ul, ol { max-width: 66ch; }
 .lede { font-size: 18px; color: var(--ink-2); max-width: 60ch; margin-bottom: 18px; }
 .panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; margin: 14px 0; }
-.panel svg { display: block; width: 100%; height: auto; }
+.panel > svg { display: block; width: 100%; height: auto; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .btn { border: 1px solid var(--ink); background: transparent; color: var(--ink); border-radius: 6px; padding: 8px 14px; font: 500 14px var(--font-body); cursor: pointer; }
 .btn:hover { background: #eaeeec; }
@@ -67,7 +67,10 @@ table input[type='number'] { padding: 4px 6px; width: 5.5em; text-align: right; 
 .form label { font-size: 13.5px; color: var(--ink-2); display: block; }
 .form label input, .form label select { margin-top: 4px; }
 .form .wide { grid-column: 1 / -1; }
-.pager { display: flex; justify-content: space-between; margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.pager .kbd { font-size: 13px; color: var(--ink-2); }
+.pager kbd { font: inherit; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; background: #fff; }
+@media (hover: none), (max-width: 560px) { .pager .kbd { display: none; } }
 .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 .legend i { display: inline-block; width: 14px; height: 6px; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
 .stat { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); margin-top: 10px; }

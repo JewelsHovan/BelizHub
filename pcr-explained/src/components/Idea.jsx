@@ -49,7 +49,19 @@ export default function Idea() {
       <Details summary="Timeline in five lines">
         <p>1971: Kleppe and Khorana describe primer-directed replication in principle. 1976: Chien, Edgar and Trela isolate a thermostable polymerase from <em>Thermus aquaticus</em>. 1983–85: Mullis conceives PCR at Cetus and the first working version uses Klenow, added fresh every cycle. 1988: Saiki et al. publish PCR with Taq; the first thermal cycler follows. 1993: Mullis shares the Nobel Prize in Chemistry.</p>
       </Details>
-      <Sources keys={['saiki', 'mullis', 'nobel', 'garibyan', 'khan', 'tf_basics']} />
+      <Details summary="Variants you will meet">
+        <ul>
+          <li><b>Hot-start.</b> The polymerase is blocked (antibody, aptamer or chemical modification) until the first 95 °C step, so nothing extends during setup. Fewer primer-dimers and nonspecific bands; the default for most modern enzymes.</li>
+          <li><b>Touchdown.</b> The annealing temperature starts several degrees above Tm and drops 0.5–1 °C per cycle for the first 10–15 cycles, then holds. The earliest, most stringent cycles seed the specific product, which then out-competes everything else.</li>
+          <li><b>Nested.</b> A second round with primers that sit inside the first amplicon. Any off-target product from round one lacks the inner sites, so specificity and sensitivity both rise.</li>
+          <li><b>Multiplex.</b> Several primer pairs in one tube for several targets at once. Needs matched Tm across all primers and products that separate on a gel or by probe colour.</li>
+          <li><b>Colony PCR.</b> A scrape of a bacterial colony straight into the tube; the initial denaturation lyses the cells. Screens clones in an afternoon without a miniprep.</li>
+          <li><b>RT-PCR.</b> A reverse transcriptase first copies RNA into cDNA, then ordinary PCR amplifies it. How gene expression and RNA viruses are detected.</li>
+          <li><b>qPCR (real-time).</b> A fluorescent dye or probe reports product every cycle. The cycle at which fluorescence crosses a threshold (Cq) is proportional to log of the starting copies, which is what makes it quantitative.</li>
+          <li><b>Long-range and high-fidelity.</b> Proofreading enzymes (Q5, Phusion, KOD) or blends for amplicons above about 3 kb and for anything you will sequence or clone.</li>
+        </ul>
+      </Details>
+      <Sources keys={['saiki', 'mullis', 'chien', 'nobel', 'garibyan', 'khan', 'tf_basics', 'tf_methods']} />
     </>
   );
 }

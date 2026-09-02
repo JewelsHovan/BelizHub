@@ -22,6 +22,8 @@ export default function Protocol() {
   const mix = useMemo(() => masterMix(settings, components), [settings, components]);
   const program = useMemo(() => cyclingProgram(settings), [settings]);
   const steps = useMemo(() => benchSteps(mix, program), [mix, program]);
+  const perL = `per ${mix.V} µL`;
+  const mixL = `mix for ${mix.nEff.toFixed(1)} rxn`;
 
   const pullTm = () => {
     if (primerTm) { set('tmf', primerTm.f.toFixed(1)); set('tmr', primerTm.r.toFixed(1)); setMsg('Tm updated from the Primers tab'); }
@@ -72,23 +74,23 @@ export default function Protocol() {
       <h2>Master mix</h2>
       <p className="note">Edit stock or final concentrations to match your reagents. Volumes update.</p>
       <div className="tablewrap">
-        <table>
+        <table className={s.mix}>
           <thead>
-            <tr><th>Component</th><th className="num">Stock</th><th className="num">Final</th><th className="num">per {mix.V} µL</th><th className="num">mix for {mix.nEff.toFixed(1)} rxn</th></tr>
+            <tr><th>Component</th><th className="num">Stock</th><th className="num">Final</th><th className="num">{perL}</th><th className="num">{mixL}</th></tr>
           </thead>
           <tbody>
-            <tr><td>Nuclease-free water<div className="note">to volume</div></td><td className="num" /><td className="num" /><td className="num">{fmtV(mix.water)}</td><td className="num">{fmtV(mix.water * mix.nEff)}</td></tr>
+            <tr><td>Nuclease-free water<div className="note">to volume</div></td><td className="num" /><td className="num" /><td className="num" data-label={perL}>{fmtV(mix.water)}</td><td className="num" data-label={mixL}>{fmtV(mix.water * mix.nEff)}</td></tr>
             {mix.rows.map((c) => (
               <tr key={c.id}>
                 <td>{c.name}<div className="note">{c.hint}</div></td>
-                <td className="num"><input type="number" value={c.stock} step="any" min="0" onChange={(e) => setComp(c.id, 'stock', e.target.value)} /> {c.unit}</td>
-                <td className="num"><input type="number" value={c.final} step="any" min="0" onChange={(e) => setComp(c.id, 'final', e.target.value)} /> {c.unit}</td>
-                <td className="num">{fmtV(c.vol)}</td>
-                <td className="num">{fmtV(c.vol * mix.nEff)}</td>
+                <td className="num" data-label="Stock"><input type="number" value={c.stock} step="any" min="0" onChange={(e) => setComp(c.id, 'stock', e.target.value)} /> {c.unit}</td>
+                <td className="num" data-label="Final"><input type="number" value={c.final} step="any" min="0" onChange={(e) => setComp(c.id, 'final', e.target.value)} /> {c.unit}</td>
+                <td className="num" data-label={perL}>{fmtV(c.vol)}</td>
+                <td className="num" data-label={mixL}>{fmtV(c.vol * mix.nEff)}</td>
               </tr>
             ))}
-            <tr><td>Template DNA<div className="note">added to each tube, not to the mix</div></td><td className="num" /><td className="num" /><td className="num">{fmtV(mix.tpl)}</td><td className="num">{fmtV(mix.tpl)} each</td></tr>
-            <tr><td><b>Total</b></td><td /><td /><td className="num"><b>{mix.V}</b></td><td className="num"><b>{fmtV(mix.perTube * mix.nEff)}</b> mix, {fmtV(mix.perTube)} per tube</td></tr>
+            <tr><td>Template DNA<div className="note">added to each tube, not to the mix</div></td><td className="num" /><td className="num" /><td className="num" data-label={perL}>{fmtV(mix.tpl)}</td><td className="num" data-label={mixL}>{fmtV(mix.tpl)} each</td></tr>
+            <tr><td><b>Total</b></td><td /><td /><td className="num" data-label={perL}><b>{mix.V}</b></td><td className="num" data-label={mixL}><b>{fmtV(mix.perTube * mix.nEff)}</b> mix, {fmtV(mix.perTube)} per tube</td></tr>
           </tbody>
         </table>
       </div>

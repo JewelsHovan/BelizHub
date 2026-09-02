@@ -2,13 +2,13 @@
 
 A home for interactive learning tools, deployed with GitHub Pages.
 
-**Live:** https://jewelshovan.github.io/BelizHub/
+**Live:** https://julienhovan.com/BelizHub/
 
 ## Apps
 
 | App | Folder | Live |
 | --- | --- | --- |
-| PCR, from molecule to protocol | [`pcr-explained/`](pcr-explained/) | https://jewelshovan.github.io/BelizHub/pcr-explained/ |
+| PCR, from molecule to protocol | [`pcr-explained/`](pcr-explained/) | https://julienhovan.com/BelizHub/pcr-explained/ |
 
 Each app is a self-contained project in its own folder with its own README, tests and build. The root `index.html` is the landing page that links to them.
 
