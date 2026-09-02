@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import s from './Tabs.module.css';
 
 export const TABS = [
-  ['1', 'The idea'], ['2', 'Reagents'], ['3', 'The cycle'], ['4', 'Copies'],
-  ['5', 'Primers'], ['6', 'Protocol'], ['7', 'Troubleshooting'], ['8', 'Review'],
+  ['1', 'The idea'], ['2', 'RNA & reagents'], ['3', 'cDNA synthesis'], ['4', 'The PCR cycle'], ['5', 'Readout'],
+  ['6', 'Primers'], ['7', 'Protocol'], ['8', 'Troubleshooting'], ['9', 'Review'],
 ];
 
 // The app is deployed under the hub at /<repo>/pcr-explained/, so one level up is the hub index.
@@ -34,8 +34,8 @@ export default function Tabs({ current, onSelect }) {
   return (
     <header className={s.top}>
       <div className={s.brand}>
-        <span className={s.wordmark}>PCR</span>
-        <span className={s.sub}>from molecule to protocol</span>
+        <span className={s.wordmark}>RT-PCR</span>
+        <span className={s.sub}>from RNA to result</span>
         <a className={s.hub} href={HUB_URL}>Beliz Hub</a>
       </div>
       <div className={`${s.wrap} ${edges.l ? s.fadeL : ''} ${edges.r ? s.fadeR : ''}`}>

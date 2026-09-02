@@ -1,0 +1,10 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; margin-top: 8px; }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+.dup { display: block; width: 100%; height: auto; }
+.ddgrid { display: grid; grid-template-columns: minmax(120px, 1.4fr) 1fr 1fr; gap: 6px 10px; align-items: center; font-size: 14px; }
+.colh { font-weight: 600; color: var(--ink-2); font-size: 13px; text-align: center; }
+.rowh { color: var(--ink-2); }
+.out { text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ddgrid input { text-align: right; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.chk input { accent-color: var(--ink); }

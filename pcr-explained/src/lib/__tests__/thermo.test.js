@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { tmNN, revcomp, comp3, hairpin, analyze, pairAnalysis, clean, wallace } from '../thermo.js';
+import { tmNN, revcomp, comp3, hairpin, analyze, pairAnalysis, clean, wallace, locatePrimers } from '../thermo.js';
 
 describe('thermo', () => {
   it('cleans input to A/C/G/T uppercase', () => {
@@ -39,5 +39,30 @@ describe('thermo', () => {
     expect(p.dTm).toBeLessThan(1);
     expect(p.taHigh).toBeCloseTo(p.lo - 3, 5);
     expect(p.cross).toBe(0);
+  });
+});
+
+describe('locatePrimers', () => {
+  const F = 'TGCCATGCACCAGGTTGTTG';
+  const R = 'ATGTGGCACACTGCGTTGTC';
+  const spacer = 'ACGTTGCAGGCTAGCTAGGATCCAGTCAGTCAGGTACGATCGATCGGCTAGCTAGGCATCGATCGATTACGGCTAGCTAGGCTAGGACT';
+  const T = 'GGGGAAAA' + F + spacer + revcomp(R) + 'TTTTCCCC';
+  it('finds a correctly oriented pair and reports the amplicon length', () => {
+    const r = locatePrimers(T, F, R);
+    expect(r.issues).toEqual([]);
+    expect(r.fwd).toBe(8);
+    expect(r.amplicon).toBe(F.length + spacer.length + R.length);
+  });
+  it('explains a reverse primer written in the sense orientation', () => {
+    const r = locatePrimers(T, F, revcomp(R));
+    expect(r.amplicon).toBeNull();
+    expect(r.issues[0]).toMatch(/sense orientation/);
+  });
+  it('explains swapped primers', () => {
+    const r = locatePrimers(T, R, F);
+    expect(r.issues.some((s) => /not in this template|antisense/.test(s))).toBe(true);
+  });
+  it('returns null for short input', () => {
+    expect(locatePrimers('ACGT', F, R)).toBeNull();
   });
 });

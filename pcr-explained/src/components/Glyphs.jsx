@@ -48,6 +48,33 @@ export const GLYPHS = {
       <path d="M22 5c6 9 11 15 11 21a11 11 0 0 1-22 0c0-6 5-12 11-21z" fill="#D8E5F4" stroke="#2F6FB5" strokeWidth="2" />
     </svg>
   ),
+  rna: (p) => (
+    <svg {...svgProps} {...p}>
+      <path d="M4 20c6-10 12-10 18 0s12 10 16 0" fill="none" stroke="#B8336A" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="4" cy="20" r="3.5" fill="#B8336A" />
+      <text x="22" y="37" textAnchor="middle" fontFamily="ui-monospace,Menlo,monospace" fontSize="9" fontWeight="700" fill="#B8336A">AAAAA</text>
+    </svg>
+  ),
+  rt: (p) => (
+    <svg {...svgProps} {...p}>
+      <path d="M8 24c0-10 7-16 15-16 9 0 15 5 15 12 0 5-4 6-4 10 0 3 3 4 3 7 0 3-6 4-14 4C13 41 8 34 8 24z" fill="#2F6FB5" />
+      <path d="M4 27h18" stroke="#B8336A" strokeWidth="3" strokeLinecap="round" />
+      <path d="M22 27h18" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  ),
+  inhibitor: (p) => (
+    <svg {...svgProps} {...p}>
+      <path d="M22 4l14 5v12c0 9-6 15-14 19C14 36 8 30 8 21V9z" fill="#D8E5F4" stroke="#2F6FB5" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M15 22l5 5 9-10" fill="none" stroke="#2F6FB5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  dye: (p) => (
+    <svg {...svgProps} {...p}>
+      <circle cx="22" cy="22" r="8" fill="#2E8B57" />
+      <circle cx="22" cy="22" r="13" fill="none" stroke="#2E8B57" strokeWidth="2" opacity=".45" />
+      <path d="M22 3v6M22 35v6M3 22h6M35 22h6M8.5 8.5l4.3 4.3M31.2 31.2l4.3 4.3M8.5 35.5l4.3-4.3M31.2 12.8l4.3-4.3" stroke="#2E8B57" strokeWidth="2" strokeLinecap="round" opacity=".7" />
+    </svg>
+  ),
   plus: (p) => (
     <svg {...svgProps} {...p}>
       <circle cx="22" cy="22" r="15" fill="none" stroke="#7A8797" strokeWidth="2" strokeDasharray="3 3" />

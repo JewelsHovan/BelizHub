@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import Tabs, { TABS } from './components/Tabs.jsx';
 import Idea from './components/Idea.jsx';
 import Reagents from './components/Reagents.jsx';
+import ReverseTranscription from './components/ReverseTranscription.jsx';
 import CycleAnimation from './components/CycleAnimation.jsx';
-import Copies from './components/Copies.jsx';
+import Readout from './components/Readout.jsx';
 import Primers from './components/Primers.jsx';
 import Protocol from './components/Protocol.jsx';
 import Troubleshooting from './components/Troubleshooting.jsx';
@@ -14,6 +15,7 @@ import { PrimerContext } from './context.js';
 export default function App() {
   const [tab, setTab] = useHashRoute(TABS.length);
   const [primerTm, setPrimerTm] = useState(null);
+  const [amplicon, setAmplicon] = useState(null);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -29,13 +31,13 @@ export default function App() {
 
   // Every section stays mounted so inputs, quiz progress and animation position survive tab changes.
   const pages = [
-    <Idea />, <Reagents />, <CycleAnimation active={tab === 2} />, <Copies />,
+    <Idea onGo={setTab} />, <Reagents />, <ReverseTranscription active={tab === 2} />, <CycleAnimation active={tab === 3} />, <Readout />,
     <Primers />, <Protocol />, <Troubleshooting />, <Review />,
   ];
   const last = tab === TABS.length - 1;
 
   return (
-    <PrimerContext.Provider value={{ primerTm, setPrimerTm }}>
+    <PrimerContext.Provider value={{ primerTm, setPrimerTm, amplicon, setAmplicon }}>
       <Tabs current={tab} onSelect={setTab} />
       <main>
         {pages.map((page, i) => (

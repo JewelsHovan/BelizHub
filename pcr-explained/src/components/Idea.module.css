@@ -1,5 +1,16 @@
-.mini { display: flex; flex-wrap: wrap; gap: 4px; }
-.mini svg { width: 36px; height: 12px; }
-.big { font-family: var(--font-display); font-size: 34px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.bar { height: 6px; background: #e6eae8; border-radius: 3px; margin-top: 8px; }
-.fill { height: 6px; background: var(--ink); border-radius: 3px; }
+.flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; counter-reset: st; }
+.flow li { position: relative; }
+.flow li + li::before { content: '\2192'; position: absolute; left: -9px; top: 26px; color: var(--ink-2); font-size: 14px; }
+.stage { width: 100%; display: grid; justify-items: center; gap: 2px; border: 1px solid var(--rule); background: #fff; border-radius: 10px; padding: 10px 6px 8px; cursor: pointer; font: inherit; color: var(--ink-2); border-bottom: 3px solid var(--rule); }
+.stage svg { width: 40px; height: 40px; }
+.stage.on { border-color: var(--c); border-bottom-color: var(--c); color: var(--ink); }
+.lab { font-weight: 600; font-size: 14px; }
+.time { font-size: 12px; color: var(--ink-2); }
+.body { border-left: 4px solid var(--c); padding: 8px 12px 4px; margin-top: 12px; }
+.body p { margin: 0 0 10px; font-size: 15px; max-width: none; }
+@media (max-width: 520px) {
+  .flow { grid-template-columns: 1fr 1fr; }
+  .flow li + li::before { display: none; }
+  .stage { padding: 8px 6px; }
+  .stage svg { width: 32px; height: 32px; }
+}

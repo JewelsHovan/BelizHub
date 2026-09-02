@@ -108,3 +108,46 @@ export function verdicts(A) {
     ['3′ hairpin', A.hp ? `${A.hp} nt stem` : 'none', A.hp ? 'warn' : 'ok'],
   ];
 }
+
+const occurrences = (hay, needle) => {
+  let n = 0;
+  for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + 1)) n++;
+  return n;
+};
+
+/**
+ * Where a primer pair sits on a template written 5'→3' as the sense (mRNA-like) strand.
+ * The forward primer must match the sense strand; the reverse primer must match its reverse complement, downstream.
+ * Returns null if inputs are too short; otherwise positions (0-based), amplicon length and a list of plain-language issues.
+ */
+export function locatePrimers(template, fwd, rev) {
+  const T = clean(template);
+  const F = clean(fwd);
+  const R = clean(rev);
+  if (T.length < 20 || F.length < 8 || R.length < 8) return null;
+  const idx = (s) => { const i = T.indexOf(s); return i < 0 ? null : i; };
+  const fSense = idx(F);
+  const fAnti = idx(revcomp(F));
+  const rAnti = idx(revcomp(R));
+  const rSense = idx(R);
+  const issues = [];
+  let amplicon = null;
+  if (fSense === null) {
+    issues.push(fAnti !== null
+      ? 'The forward primer matches the antisense strand. It is written as a reverse complement; use the sense sequence.'
+      : 'The forward primer is not in this template (an exact match is required). Check the sequence, the strand, and that this is the transcript you mean.');
+  }
+  if (rAnti === null) {
+    issues.push(rSense !== null
+      ? 'The reverse primer appears in the sense orientation. It must be the reverse complement of the template; reverse-complement it.'
+      : 'The reverse-complement of the reverse primer is not in this template. Check the sequence and orientation.');
+  }
+  if (fSense !== null && rAnti !== null) {
+    const end = rAnti + R.length;
+    if (end > fSense) amplicon = end - fSense;
+    else issues.push('The reverse site lies upstream of the forward site, so nothing between them can be amplified. The primers are swapped or one is on the wrong strand.');
+  }
+  if (fSense !== null && occurrences(T, F) > 1) issues.push('The forward primer matches more than one site in this template.');
+  if (rAnti !== null && occurrences(T, revcomp(R)) > 1) issues.push('The reverse primer matches more than one site in this template.');
+  return { fwd: fSense, rev: rAnti, revEnd: rAnti === null ? null : rAnti + R.length, amplicon, issues, len: T.length };
+}

@@ -9,3 +9,8 @@
 .ruleset li:last-child { border-bottom: 1px solid var(--rule); }
 .ruleset b { font-weight: 600; }
 @media (max-width: 480px) { .ruleset li { grid-template-columns: 1fr; gap: 2px; } }
+.modebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.tpl { display: block; font-size: 13.5px; color: var(--ink-2); }
+.tpl textarea { display: block; width: 100%; margin-top: 4px; font: 13px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; padding: 8px; border: 1px solid var(--rule); border-radius: 6px; background: #fff; color: var(--ink); resize: vertical; }
+.issues { list-style: none; padding: 0; margin: 8px 0; font-size: 14px; }
+.issues li { padding: 4px 0; }

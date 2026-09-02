@@ -3,6 +3,10 @@
 .num { font-family: var(--font-display); font-size: 20px; color: var(--ink-2); line-height: 1.2; }
 .why { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
 
+@media (min-width: 601px) {
+  .mix td:first-child { min-width: 190px; }
+  .mix td:first-child :global(.note) { max-width: none; }
+}
 /* Master-mix table: on phones each component becomes a block with a labelled 2x2 grid of its numbers. */
 @media (max-width: 600px) {
   .mix thead { display: none; }
@@ -14,3 +18,7 @@
   .mix td[data-label]::before { content: attr(data-label); display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 2px; }
   .mix td input { width: 5em; text-align: left; }
 }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); align-self: end; padding-bottom: 6px; }
+.chk input { accent-color: var(--ink); }
+.planner { border: 1px dashed var(--rule); border-radius: 8px; padding: 8px 10px; background: #fafbfa; }
+.plannerh { font-weight: 600; font-size: 14px; }

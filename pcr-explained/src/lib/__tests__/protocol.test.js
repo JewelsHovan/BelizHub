@@ -38,3 +38,29 @@ describe('protocol', () => {
     expect(txt).toContain('6. Run 5 µL');
   });
 });
+
+describe('protocol, real-time readout', () => {
+  const q = { ...DEFAULT_SETTINGS, readout: 'sybr', V: 20, tpl: 2, len: 120, cyc: 40, tmf: 60, tmr: 60 };
+  it('uses the 2× mix components and flags cDNA above 10 % of the volume', () => {
+    const m = masterMix(q);
+    expect(m.rows.map((r) => r.id)).toEqual(['mix2x', 'fwd', 'rev']);
+    expect(m.rows[0].vol).toBeCloseTo(10);
+    expect(m.tplHigh).toBe(false);
+    expect(masterMix({ ...q, tpl: 4 }).tplHigh).toBe(true);
+  });
+  it('builds a two-step program with a melt curve for SYBR only', () => {
+    const s = cyclingProgram(q);
+    expect(s.realTime).toBe(true);
+    expect(s.ta).toBe(60);
+    expect(s.steps.some((x) => x.name.startsWith('Melt curve'))).toBe(true);
+    const p = cyclingProgram({ ...q, readout: 'probe' });
+    expect(p.steps.some((x) => x.name.startsWith('Melt curve'))).toBe(false);
+    expect(cyclingProgram({ ...q, tmf: 55, tmr: 56 }).ta).toBe(55);
+  });
+  it('text mentions the plate and the −RT control', () => {
+    const m = masterMix(q);
+    const txt = protocolText(q, m, cyclingProgram(q));
+    expect(txt).toContain('SYBR');
+    expect(txt).toContain('−RT');
+  });
+});

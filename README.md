@@ -8,7 +8,7 @@ A home for interactive learning tools, deployed with GitHub Pages.
 
 | App | Folder | Live |
 | --- | --- | --- |
-| PCR, from molecule to protocol | [`pcr-explained/`](pcr-explained/) | https://julienhovan.com/BelizHub/pcr-explained/ |
+| RT-PCR, from RNA to result | [`pcr-explained/`](pcr-explained/) | https://julienhovan.com/BelizHub/pcr-explained/ |
 
 Each app is a self-contained project in its own folder with its own README, tests and build. The root `index.html` is the landing page that links to them.
 

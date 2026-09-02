@@ -1,0 +1,15 @@
+.steps { display: flex; gap: 6px; margin-top: 10px; }
+.dot { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--rule); background: #fff; font: 600 13px var(--font-body); color: var(--ink-2); cursor: pointer; }
+.dot.done { background: #e6eae8; }
+.dot.cur { background: var(--ink); color: #fff; border-color: var(--ink); }
+.box { border-left: 4px solid var(--cool); padding: 8px 12px; margin-top: 12px; background: #fff; border-radius: 0 8px 8px 0; }
+.box h3 { margin: 0 0 4px; font-size: 16px; }
+.box p { margin: 0 0 6px; font-size: 15px; }
+/* Priming comparison: on phones each row becomes a block with the three options labelled. */
+@media (max-width: 600px) {
+  .compare thead { display: none; }
+  .compare tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .compare td { display: block; border: 0; padding: 3px 0; }
+  .compare td:first-child { padding-bottom: 4px; }
+  .compare td[data-label]::before { content: attr(data-label) ': '; font-weight: 600; color: var(--ink-2); }
+}

@@ -18,3 +18,7 @@ export const fmtCount = (x) => (x >= 1e4 ? sci(x) : Math.round(x).toLocaleString
 /** Volume in µL, trimmed to 2 decimals without trailing zeros. */
 export const fmtV = (v) => v.toFixed(2).replace(/\.?0+$/, '');
 export const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+export const RNA_G_PER_NT = 340;
+/** Molecules of single-stranded RNA from mass in ng and length in nt. */
+export const rnaCopiesFromNg = (ng, nt) => (ng * 1e-9 * AVOGADRO) / (nt * RNA_G_PER_NT);

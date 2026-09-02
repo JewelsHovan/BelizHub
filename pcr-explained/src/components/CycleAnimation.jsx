@@ -5,6 +5,7 @@ import { BOUNDARIES, BOUNDARY_T, PHASE, TOTAL_S, geometry, caption } from '../li
 import { mmss } from '../lib/units.js';
 import Details from './Details.jsx';
 import Sources from './Sources.jsx';
+import Videos from './Videos.jsx';
 import s from './CycleAnimation.module.css';
 
 const X = (t) => 20 + t * 320;
@@ -101,8 +102,8 @@ export default function CycleAnimation({ active }) {
   const secs = Math.round(t * TOTAL_S);
   return (
     <>
-      <h1>Three temperatures, one cycle.</h1>
-      <p className="lede">Watch a single cycle at the molecular level while the block temperature changes. Play it, step to a phase, or drag through it.</p>
+      <h1>Three temperatures, one cycle. The template is now cDNA.</h1>
+      <p className="lede">Once cDNA exists, the reaction is ordinary PCR. Watch a single cycle at the molecular level while the block temperature changes. Play it, step to a phase, or drag through it.</p>
       <div className="panel">
         <TemperatureTrace t={t} T={g.T} />
         <MolecularView t={t} g={g} cycleNo={cycleNo} />
@@ -134,13 +135,17 @@ export default function CycleAnimation({ active }) {
         <p><b>50–65 °C, annealing.</b> On cooling, the primers (present at roughly 10⁸ times the molar amount of template) find their sites long before the two original long strands can re-pair. The temperature sets stringency: at Tm − 3 to 5 °C a perfectly matched primer stays bound while mismatched sites do not. Too low and primers tolerate mismatches, giving extra bands; too high and the primer melts off before the polymerase can extend it.</p>
         <p><b>68–72 °C, extension.</b> Near the enzyme's optimum, hot enough that any mispaired primer melts off, cool enough that the correctly paired primer and the growing strand stay on. Taq adds about 1,000 nucleotides per minute, so extension time scales with amplicon length (1 min per kb is the safe rule). NEB notes their Taq is often more robust at 68 °C.</p>
       </Details>
+      <Details summary="The first cycle is one-sided">
+        <p>First-strand cDNA is a single strand, antisense to the mRNA. In cycle 1 only the <b>forward</b> primer (which has the mRNA's own sequence) can pair with it; the reverse primer has nothing to bind until the forward primer has been extended. From cycle 2 both primers have templates and the reaction doubles as usual. Two consequences: a one-cycle lag that is identical for every sample so it cancels in comparisons, and the fact that if your forward primer is written on the wrong strand, cycle 1 never happens at all. The Primers tab checks orientation against your transcript.</p>
+      </Details>
       <Details summary="Initial and final steps">
-        <p><b>Initial denaturation</b> (95 °C, 30 s to 3 min) fully melts complex template such as genomic DNA and activates hot-start formulations. <b>Final extension</b> (72 °C, 5 min) lets the polymerase finish any partially extended strands and add the single 3′ A overhang Taq leaves on products, which TA-cloning vectors rely on. <b>Hold</b> at 4–10 °C keeps products stable until you take the tubes out.</p>
+        <p><b>Initial denaturation</b> (95 °C, 30 s to 3 min) fully melts the template and activates hot-start formulations; qPCR mixes call it polymerase activation and it is often the only long step. <b>Final extension</b> (72 °C, 5 min) lets the polymerase finish any partially extended strands and add the single 3′ A overhang Taq leaves on products, which TA-cloning vectors rely on. <b>Hold</b> at 4–10 °C keeps products stable until you take the tubes out. Real-time programs skip the final extension and, for SYBR assays, end with a <b>melt curve</b> instead: a slow ramp from 60 to 95 °C reading fluorescence every 0.5 °C, which is how you learn whether one product or several were made.</p>
       </Details>
       <Details summary="What the thermal cycler does">
         <p>A metal block on Peltier elements ramps at 3–6 °C/s between set points, so a 30-cycle program of 30 s steps takes roughly 60–90 min including ramps. The heated lid (about 105 °C) stops condensation on the tube cap, which would otherwise change the concentrations below. Thin-walled tubes and small volumes matter because the reaction only sees the block temperature after the liquid has equilibrated.</p>
       </Details>
-      <Sources keys={['neb_taq', 'tf_basics', 'rychlik', 'lorenz', 'khan']} />
+      <Videos topics={['pcr']} label="Watch: PCR animated" />
+      <Sources keys={['neb_taq', 'tf_basics', 'rychlik', 'lorenz', 'khan', 'tf_rtqpcr']} />
     </>
   );
 }
