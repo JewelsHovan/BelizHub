@@ -1,0 +1,4 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; margin-top: 8px; }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+.dup { display: block; width: 100%; height: auto; }
+.site { border: 1px dashed var(--ink-2); height: 5px; background: none; }

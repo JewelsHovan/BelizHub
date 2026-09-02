@@ -1,0 +1,4 @@
+.step { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--rule); }
+.step:last-child { border-bottom: 1px solid var(--rule); }
+.num { font-family: var(--font-display); font-size: 20px; color: var(--ink-2); line-height: 1.2; }
+.why { font-size: 14px; color: var(--ink-2); margin-top: 4px; }

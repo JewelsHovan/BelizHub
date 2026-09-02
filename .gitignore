@@ -1,0 +1,11 @@
+# tooling state
+.tdd/
+.claude-plans/
+.DS_Store
+
+# app build output and deps (each app also has its own .gitignore)
+node_modules/
+dist/
+dist-single/
+site/
+*.log

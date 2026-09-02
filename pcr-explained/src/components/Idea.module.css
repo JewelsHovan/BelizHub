@@ -1,0 +1,5 @@
+.mini { display: flex; flex-wrap: wrap; gap: 4px; }
+.mini svg { width: 36px; height: 12px; }
+.big { font-family: var(--font-display); font-size: 34px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; background: #e6eae8; border-radius: 3px; margin-top: 8px; }
+.fill { height: 6px; background: var(--ink); border-radius: 3px; }

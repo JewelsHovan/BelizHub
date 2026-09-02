@@ -1,0 +1,16 @@
+.list { list-style: none; padding: 0; margin: 0; }
+.item { border-top: 1px solid var(--rule); }
+.item:last-child { border-bottom: 1px solid var(--rule); }
+.item details { border: 0; padding: 0; }
+.item summary { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; }
+.item summary::before { display: none; }
+.name { font-weight: 600; display: block; }
+.role { font-size: 14px; color: var(--ink-2); display: block; font-weight: 400; }
+.item :global(.body) { padding: 0 0 14px 56px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 14.5px; margin: 8px 0 10px; }
+.kv dt { color: var(--ink-2); }
+.kv dd { margin: 0; }
+@media (max-width: 480px) {
+  .item :global(.body) { padding-left: 0; }
+  .item summary :global(.chip) { display: none; }
+}

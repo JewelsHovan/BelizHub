@@ -1,0 +1,6 @@
+.phasebox { border-left: 4px solid var(--rule); padding: 8px 12px; margin-top: 12px; background: #fff; border-radius: 0 8px 8px 0; }
+.heat { border-left-color: var(--heat); }
+.cool { border-left-color: var(--cool); }
+.warm { border-left-color: var(--warm); }
+.phasebox h3 { margin: 0 0 4px; font-size: 16px; }
+.phasebox p { margin: 0 0 6px; font-size: 15px; }

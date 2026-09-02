@@ -1,0 +1,9 @@
+.q { border-top: 1px solid var(--rule); padding: 14px 0; }
+.q:last-child { border-bottom: 1px solid var(--rule); }
+.qt { font-weight: 500; }
+.opts { display: grid; gap: 6px; margin-top: 8px; }
+.opts button { text-align: left; border: 1px solid var(--rule); background: #fff; padding: 9px 12px; border-radius: 8px; font: inherit; font-size: 15px; cursor: pointer; color: var(--ink); }
+.opts button:disabled { cursor: default; }
+.right { border-color: var(--ok) !important; background: #eaf5ee !important; }
+.wrong { border-color: var(--heat) !important; background: #fbe9e4 !important; }
+.expl { font-size: 14px; color: var(--ink-2); margin-top: 8px; }
