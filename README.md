@@ -1,41 +1,68 @@
 # Beliz Hub
 
-A home for interactive learning tools, deployed with GitHub Pages.
+A personal biotechnology study hub: public interactive explainers, plus a **private local Lecture Desk** for returning to lectures and practising ideas.
 
-**Live:** https://julienhovan.com/BelizHub/
+**Public hub:** https://julienhovan.com/BelizHub/
+
+## Open the private workspace
+
+Requires Python 3.10+, with no additional runtime packages. From this folder:
+
+```bash
+python3 lecture-desk/server.py
+```
+
+Then open **http://127.0.0.1:4317/**. On macOS, `Start Lecture Desk.command` is a double-click launcher. Try the authored sample, or add a permitted transcript and optional recording/PDF slides.
+
+Lecture Desk supports source-linked notes, bookmarks, saved playback position, course filtering, short self-review sessions, and export/delete. Data stays outside this repo in `~/.local/share/beliz-hub/` by default. **No AI processing or automatic transcription is connected yet.**
+
+See **[`lecture-desk/README.md`](lecture-desk/README.md)** for setup, privacy limitations, backup/restore, supported files, and tests.
 
 ## Apps
 
-| App | Folder | Live |
+| App | Location | Runs where |
 | --- | --- | --- |
-| RT-PCR, from RNA to result | [`pcr-explained/`](pcr-explained/) | https://julienhovan.com/BelizHub/pcr-explained/ |
+| Lecture Desk | [`lecture-desk/`](lecture-desk/) | On her laptop only |
+| RT-PCR, from RNA to result | [`pcr-explained/`](pcr-explained/) | [Public site](https://julienhovan.com/BelizHub/pcr-explained/) or a local build |
 
-Each app is a self-contained project in its own folder with its own README, tests and build. The root `index.html` is the landing page that links to them.
+The root `index.html` is the public hub. `assets/hub.css` and locally bundled, OFL-licensed fonts provide the shared visual language. The public page explains how to open the separate local workspace; it does not fetch, receive, or display private lecture data.
 
-## How deployment works
-
-`.github/workflows/pages.yml` runs on every push to `main`:
-
-1. installs, tests and builds each app (Vite apps get `VITE_BASE=/BelizHub/<app>/` so asset paths resolve under the sub-path)
-2. copies the root `index.html` plus each app's build output into `site/`
-3. publishes `site/` to GitHub Pages
-
-The repo's Pages source is set to **GitHub Actions**, so there is no `gh-pages` branch to maintain.
-
-## Adding another app
-
-1. Put it in a new folder, e.g. `my-app/`, with its own `package.json` (or plain static files).
-2. In `pages.yml`, add a build step and copy its output into `site/my-app/`. Static apps just need the copy.
-3. Add a card for it in the root `index.html`.
-
-## Working locally
+## Working on the visual lab
 
 ```bash
 cd pcr-explained
-npm install
-npm run dev      # dev server with hot reload
-npm test         # unit tests
-npm run build    # production build to dist/
+npm ci
+npm run dev
+npm test
+npm run build
 ```
 
-To preview the hub page locally, open `index.html` in a browser; the app link works after `npm run build` only when served under the same paths as Pages, so for app work use `npm run dev` inside the app folder instead.
+After building, the local Lecture Desk serves the lab at `/pcr-explained/`. Relative asset paths support that location; production deployments use `VITE_BASE` explicitly. The existing lab can load external fonts/video thumbnails and open third-party videos and sources.
+
+## Verification
+
+```bash
+python3 -m unittest discover -s lecture-desk/tests -v
+cd lecture-desk
+npm ci
+npx playwright install chromium
+npm run test:browser
+```
+
+Build the PCR app first for the browser tests. Those tests use temporary synthetic data and disposable local servers, not real study files.
+
+## Deployment
+
+`.github/workflows/pages.yml` runs on pushes to `main`:
+
+1. Tests the local Python app.
+2. Installs, tests, and builds the PCR app for local browser checks.
+3. Runs browser workflow, accessibility, and subpath checks, then rebuilds PCR with `VITE_BASE=/BelizHub/pcr-explained/` (derived from the repository name).
+4. Copies **only** the root `index.html`, `assets/`, and the production PCR build into `site/`.
+5. Publishes that public-only artifact to GitHub Pages.
+
+There is no cloud Lecture Desk backend and no private study data in the deployment. Never commit recordings, slides, transcripts, database backups, or private exports.
+
+## Adding another public visual tool
+
+Give it a separate folder, README, tests, and build. Add its build/copy steps to the workflow and link it from the hub. Connect it to a real study need before adding more modules. Do not turn future-feature cards into non-working navigation.

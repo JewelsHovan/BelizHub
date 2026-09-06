@@ -1,0 +1,15 @@
+{
+  "name": "beliz-lecture-desk-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Development-only browser checks. The local app needs only Python.",
+  "scripts": {
+    "test": "python3 -m unittest discover -s tests -v",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
+    "@playwright/test": "1.58.2"
+  }
+}

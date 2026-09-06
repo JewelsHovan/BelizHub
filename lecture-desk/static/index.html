@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Your private, local lecture workspace." />
+    <title>Lecture Desk · Beliz Hub</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23214f46'/%3E%3Ctext x='12' y='30' fill='white' font-family='Georgia' font-size='32'%3Eb%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/assets/hub.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <aside class="rail">
+      <a class="brand" href="#home" aria-label="Beliz Hub home"
+        ><span class="brand-mark" aria-hidden="true">b</span
+        ><span><strong>beliz</strong><small>Study hub</small></span></a
+      >
+      <nav aria-label="Main">
+        <a href="#home" data-nav="home"
+          ><span aria-hidden="true">⌂</span> My desk</a
+        ><a href="#library" data-nav="library"
+          ><span aria-hidden="true">▤</span> My lectures</a
+        ><a href="/pcr-explained/" target="_blank" rel="noreferrer"
+          ><span aria-hidden="true">⌁</span> Visual lab <small>↗</small></a
+        >
+      </nav>
+      <div class="rail-bottom">
+        <span class="pill">● On this laptop</span>
+        <p>No cloud processing.<br />Your study space is yours.</p>
+        <button class="text-button" data-action="privacy">
+          Storage &amp; backups
+        </button>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="desk-top">
+        <span id="breadcrumb">Lecture Desk</span>
+        <div class="actions">
+          <span id="save-status" role="status" aria-live="polite"
+            >Local workspace</span
+          ><button class="button small" data-action="import">
+            + Add lecture
+          </button>
+        </div>
+      </header>
+      <div id="error" role="alert" hidden></div>
+      <main id="main" tabindex="-1">
+        <p class="muted">Opening your desk…</p>
+      </main>
+      <footer class="desk-footer">
+        One useful step is enough. You can stop and come back.
+      </footer>
+    </div>
+    <dialog id="modal" aria-labelledby="modal-title">
+      <div id="modal-content"></div>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

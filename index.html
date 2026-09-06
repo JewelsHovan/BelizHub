@@ -3,80 +3,178 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Beliz Hub</title>
-    <meta name="description" content="Interactive explainers and study tools, one topic at a time." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath d='M11 4c24 12 0 24 24 36' fill='none' stroke='%231B2430' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M33 4C9 16 33 28 9 40' fill='none' stroke='%237A8797' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-    <style>
-      :root {
-        --paper: #f5f7f6; --panel: #ffffff; --ink: #1b2430; --ink-2: #5a6470; --rule: #d7ddda;
-        --heat: #d64b2a; --cool: #2f6fb5; --warm: #c98a1b; --fwd: #6a4c9c; --rev: #b8336a;
-        --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-        --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-      }
-      * { box-sizing: border-box; }
-      html { -webkit-text-size-adjust: 100%; }
-      body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; min-height: 100vh; display: flex; flex-direction: column; }
-      main { width: 100%; max-width: 760px; margin: 0 auto; padding: 40px 20px 48px; flex: 1; }
-      .eyebrow { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 6px; }
-      h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(34px, 7vw, 48px); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 12px; }
-      .lede { font-size: 18px; color: var(--ink-2); max-width: 52ch; margin: 0 0 32px; }
-      .grid { display: grid; gap: 14px; }
-      .card { display: grid; grid-template-columns: 56px 1fr; gap: 16px; align-items: start; background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; color: inherit; text-decoration: none; transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
-      a.card:hover, a.card:focus-visible { border-color: var(--ink); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(27, 36, 48, 0.07); outline: none; }
-      a.card:focus-visible { outline: 2px solid var(--cool); outline-offset: 2px; }
-      .card svg { width: 56px; height: 56px; display: block; }
-      .card h2 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.15; margin: 2px 0 6px; letter-spacing: -0.01em; }
-      .card p { margin: 0 0 10px; color: var(--ink-2); font-size: 15px; }
-      .meta { display: flex; flex-wrap: wrap; gap: 6px; }
-      .chip { display: inline-block; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 9px; font-size: 12.5px; color: var(--ink-2); background: #fff; white-space: nowrap; line-height: 1.5; }
-      .open { margin-top: 10px; font-weight: 500; font-size: 14px; color: var(--ink); }
-      .open::after { content: ' \2192'; }
-      .card.soon { border-style: dashed; background: transparent; }
-      .card.soon h2 { color: var(--ink-2); }
-      .card.soon .glyph { border: 1px dashed var(--rule); border-radius: 12px; width: 56px; height: 56px; display: grid; place-items: center; color: var(--ink-2); font-family: var(--font-display); font-size: 26px; }
-      footer { border-top: 1px solid var(--rule); padding: 14px 20px 24px; font-size: 13.5px; color: var(--ink-2); text-align: center; }
-      footer a { color: inherit; text-decoration-color: var(--rule); }
-      @media (max-width: 480px) {
-        main { padding: 28px 16px 36px; }
-        .card { grid-template-columns: 44px 1fr; gap: 12px; padding: 14px; }
-        .card svg, .card.soon .glyph { width: 44px; height: 44px; }
-        .lede { font-size: 16.5px; margin-bottom: 24px; }
-      }
-      @media (prefers-reduced-motion: reduce) { .card { transition: none; } a.card:hover { transform: none; } }
-    </style>
+    <title>Beliz Hub — a place to pick things up</title>
+    <meta
+      name="description"
+      content="A personal study hub for biotechnology: a private local lecture workspace and interactive visual learning tools."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23214f46'/%3E%3Ctext x='12' y='30' fill='white' font-family='Georgia' font-size='32'%3Eb%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="assets/hub.css" />
   </head>
   <body>
-    <main>
-      <p class="eyebrow">Beliz Hub</p>
-      <h1>Learn one thing properly.</h1>
-      <p class="lede">Interactive explainers built to be worked through, not skimmed. Every section shows the reasoning and links to its sources.</p>
-
-      <section class="grid" aria-label="Apps">
-        <a class="card" href="pcr-explained/">
-          <svg viewBox="0 0 44 44" aria-hidden="true">
-            <path d="M11 4c24 12 0 24 24 36" fill="none" stroke="#1B2430" stroke-width="3" stroke-linecap="round" />
-            <path d="M33 4C9 16 33 28 9 40" fill="none" stroke="#7A8797" stroke-width="3" stroke-linecap="round" />
-            <path d="M15 10h14M13 22h18M15 34h14" stroke="#C9D0D8" stroke-width="2" />
-          </svg>
-          <div>
-            <h2>RT-PCR, from RNA to result</h2>
-            <p>RNA handling, a step-through of reverse transcription, the PCR cycle animated, gel and real-time readouts with a ΔΔCq calculator, a primer checker that finds your amplicon on the transcript, a two-stage protocol builder, troubleshooting, verified videos, and a quiz.</p>
-            <div class="meta"><span class="chip">Molecular biology</span><span class="chip">9 sections</span><span class="chip">Interactive</span><span class="chip">Videos</span></div>
-            <div class="open">Open</div>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="public-header">
+      <a class="brand" href="./" aria-label="Beliz Hub home"
+        ><span class="brand-mark" aria-hidden="true">b</span
+        ><span><strong>beliz</strong><small>Study hub</small></span></a
+      >
+      <nav aria-label="Main">
+        <a href="#workspace">Lecture Desk</a><a href="#labs">Visual labs</a
+        ><a href="#setup">Start here</a>
+      </nav>
+    </header>
+    <main class="public-main" id="main">
+      <section class="public-hero" id="workspace" aria-labelledby="welcome">
+        <div>
+          <p class="eyebrow">Your biotechnology study space</p>
+          <h1 id="welcome">A place to<br />pick things <em>up.</em></h1>
+          <p class="lede">
+            Come back to the lecture. Untangle the idea. Try explaining it in
+            your own words. One useful step is enough to start.
+          </p>
+          <div class="actions">
+            <a
+              class="button primary"
+              href="http://127.0.0.1:4317/"
+              rel="noreferrer"
+              >Open my Lecture Desk <span aria-hidden="true">↗</span></a
+            ><a class="button quiet" href="#setup">First time? Set it up</a>
           </div>
-        </a>
-
-        <div class="card soon" aria-label="More coming">
-          <div class="glyph">+</div>
-          <div>
-            <h2>More on the way</h2>
-            <p>New tools land here as they are built. Each one is its own folder in the repo, so adding one is a copy and a link.</p>
-          </div>
+          <p class="small">
+            Lecture Desk runs on your laptop. Start the local app before opening
+            it.
+          </p>
         </div>
+        <aside class="notebook" aria-label="Your lecture-to-learning workflow">
+          <p class="eyebrow">From a lecture to an idea that sticks</p>
+          <ol class="flow-list">
+            <li>
+              <b>Keep it together</b>
+              <p>Transcript, recording, and slides. One lecture, one place.</p>
+            </li>
+            <li>
+              <b>Find the thread</b>
+              <p>
+                Mark a missed explanation. Leave a note with its source
+                attached.
+              </p>
+            </li>
+            <li>
+              <b>Work through the science</b>
+              <p>
+                Explore a visual lab or explain a mechanism in your own words.
+              </p>
+            </li>
+            <li>
+              <b>Try a little recall</b>
+              <p>Attempt a question. Check the evidence. Return another day.</p>
+            </li>
+          </ol>
+        </aside>
+      </section>
+      <section id="labs" aria-labelledby="labs-title">
+        <div class="section-title">
+          <h2 id="labs-title">Learn by working it out</h2>
+          <span class="small">The visual lab</span>
+        </div>
+        <article class="lab-feature">
+          <div class="lab-art" aria-hidden="true">
+            <svg viewBox="0 0 180 130" fill="none">
+              <path
+                d="M65 12c90 40-60 65 30 106M115 12c-90 40 60 65-30 106"
+                stroke="#66557f"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M70 21h40M76 40h28M68 63h44M74 85h32M82 105h16"
+                stroke="#a89bbd"
+                stroke-width="3"
+              />
+              <circle cx="30" cy="34" r="3" fill="#66557f" />
+              <path
+                d="M30 40v52h25M127 33h25v48"
+                stroke="#a89bbd"
+                stroke-dasharray="3 4"
+              />
+              <circle cx="152" cy="87" r="3" fill="#66557f" />
+            </svg>
+          </div>
+          <div>
+            <span class="pill violet">Molecular biology · available now</span>
+            <h3>RT-PCR, from RNA to result</h3>
+            <p>
+              Step through reverse transcription, explore the PCR cycle,
+              interpret a readout, and test your reasoning. Includes primer
+              checking, controls, and practice questions.
+            </p>
+          </div>
+          <a class="button" href="pcr-explained/"
+            >Explore RT-PCR <span aria-hidden="true">→</span></a
+          >
+        </article>
+      </section>
+      <section class="setup" id="setup" aria-labelledby="setup-title">
+        <div>
+          <p class="eyebrow">Private by location</p>
+          <h2 id="setup-title">Your lectures stay<br />on your laptop.</h2>
+          <p class="muted">
+            This website hosts public learning tools. Your Lecture Desk is a
+            separate local app: no account, cloud uploads, or AI processing in
+            this first version.
+          </p>
+          <p class="small">
+            Use only materials you have permission to record and process. You
+            decide what to keep, export, or delete.
+          </p>
+        </div>
+        <details open>
+          <summary>Set up your local Lecture Desk</summary>
+          <ol>
+            <li>
+              Get the
+              <a href="https://github.com/JewelsHovan/BelizHub" rel="noreferrer"
+                >BelizHub project</a
+              >
+              and install
+              <a href="https://www.python.org/downloads/" rel="noreferrer"
+                >Python 3.10 or newer</a
+              >, if needed.
+            </li>
+            <li>
+              In a terminal, open the project folder and run:
+              <pre><code>python3 lecture-desk/server.py</code></pre>
+              Keep that terminal open while studying. On macOS, you can also
+              double-click <code>Start Lecture Desk.command</code>.
+            </li>
+            <li>
+              <a href="http://127.0.0.1:4317/" rel="noreferrer"
+                >Open Lecture Desk</a
+              >, try the sample, then add a TXT, SRT, or VTT transcript. Attach
+              audio and PDF slides when you need them.
+            </li>
+          </ol>
+          <p class="small">
+            Already set up? Run the same command next time. Your place and notes
+            will still be there. See the
+            <a
+              href="https://github.com/JewelsHovan/BelizHub/blob/main/lecture-desk/README.md"
+              rel="noreferrer"
+              >local app guide</a
+            >
+            for backups and the offline RT-PCR build.
+          </p>
+        </details>
       </section>
     </main>
-    <footer>Built with care. Source on <a href="https://github.com/JewelsHovan/BelizHub">GitHub</a>.</footer>
+    <footer class="public-footer">
+      <span>Built with care, for Beliz. No streaks. No catching-up guilt.</span
+      ><a href="https://github.com/JewelsHovan/BelizHub" rel="noreferrer"
+        >Source &amp; project notes ↗</a
+      >
+    </footer>
   </body>
 </html>

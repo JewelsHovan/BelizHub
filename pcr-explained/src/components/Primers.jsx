@@ -23,7 +23,7 @@ const RULES = {
     ['GC 40–60 %, no runs ≥4, 3′ end ends in 1–2 G/C but not GGG/CCC', <>The usual rules; the 3′ clamp matters more here because <b>mispriming products fluoresce exactly like the real one</b> with SYBR.</>],
     ['No 3′ complementarity, self or cross', <><b>Primer-dimer is the main artefact</b> of SYBR assays: it forms in the NTC, shows as a <b>low-temperature melt peak</b> and inflates signal in low-template wells.</>],
     ['Avoid SNPs and repeats; check splice variants', <>A <b>SNP under the 3′ end</b> abolishes amplification in some samples. Decide whether the amplicon should be <b>shared by all isoforms or specific to one</b>, and check the alignment.</>],
-    ['Validate before you trust it', <>A 5-point standard curve with <b>efficiency 90–110 %</b> and R² > 0.98, a <b>single melt peak</b>, no signal in NTC and −RT, and the product once on a gel or sequenced.</>],
+    ['Validate before you trust it', <>A 5-point standard curve with <b>efficiency 90–110 %</b> and R² &gt; 0.98, a <b>single melt peak</b>, no signal in NTC and −RT, and the product once on a gel or sequenced.</>],
     ['Pick reference genes on evidence', <>Test <b>two or three candidates</b> (GAPDH, ACTB, HPRT1, TBP, RPLP0 …) across your actual conditions; use geNorm or NormFinder to choose the stable ones. A reference that <b>moves with treatment</b> silently rewrites your result.</>],
     ['Start from validated pairs', <><b>PrimerBank</b> lists tested human and mouse assays with the exact sequences. <b>Primer-BLAST</b> designs new ones with the exon-junction option and checks specificity against the transcriptome in one go.</>],
   ],

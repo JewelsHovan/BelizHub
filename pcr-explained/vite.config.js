@@ -7,7 +7,8 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig(({ mode }) => {
   const single = mode === 'single';
   return {
-    base: single ? './' : process.env.VITE_BASE || '/',
+    // Relative assets also work inside the local Lecture Desk server.
+    base: single ? './' : process.env.VITE_BASE || './',
     plugins: [react(), ...(single ? [viteSingleFile()] : [])],
     build: { outDir: single ? 'dist-single' : 'dist', emptyOutDir: true },
     test: { environment: 'node', include: ['src/**/*.test.js'] },

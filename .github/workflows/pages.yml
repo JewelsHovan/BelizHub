@@ -19,20 +19,39 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: pcr-explained/package-lock.json
+          cache-dependency-path: |
+            pcr-explained/package-lock.json
+            lecture-desk/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test local Lecture Desk (no private data is deployed)
+        run: python3 -m unittest discover -s lecture-desk/tests -v
       - name: Install, test and build pcr-explained
         working-directory: pcr-explained
-        env:
-          # The hub lives at /<repo>/ and each app at /<repo>/<app>/
-          VITE_BASE: /${{ github.event.repository.name }}/pcr-explained/
         run: |
           npm ci
           npm test
           npm run build
+      - name: Browser workflows, accessibility and public subpath checks
+        working-directory: lecture-desk
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:browser
+      - name: Build PCR with the production Pages prefix
+        working-directory: pcr-explained
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/pcr-explained/
+        run: npm run build
+      - name: Verify production Pages asset paths
+        working-directory: lecture-desk
+        run: npm run test:browser -- --grep "public hub"
       - name: Assemble site
         run: |
           mkdir -p site/pcr-explained
           cp index.html site/
+          cp -r assets site/assets
           cp -r pcr-explained/dist/. site/pcr-explained/
           touch site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
