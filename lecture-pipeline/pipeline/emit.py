@@ -129,6 +129,39 @@ def to_readable(meta, segments, secs):
     return "\n".join(out)
 
 
+def to_review(meta, verified):
+    """What the review model proposed, and what the recording said about it."""
+    groups = {"CONFIRMED": [], "CONTRADICTED": [], "UNRESOLVED": []}
+    for v in verified:
+        groups.setdefault(v["verdict"], []).append(v)
+    out = [f"# Review log — {meta['title']}", "",
+           "A language model proof-read the transcript for biology and lab-method "
+           "errors. Every proposal was then checked against the recording by "
+           "re-transcribing that moment with independent engines.", "",
+           f"**{len(groups['CONFIRMED'])} applied · "
+           f"{len(groups['CONTRADICTED'])} rejected · "
+           f"{len(groups['UNRESOLVED'])} need a human**", ""]
+
+    out += ["## Applied (an independent engine heard this in the audio)", ""]
+    for v in groups["CONFIRMED"]:
+        out.append(f"- `{hhmm(v['at'])}` “{v['find']}” → **{v['replace']}** — "
+                   f"{v['reason']} *(heard by {', '.join(v['heard_new'])})*")
+    out += ["", "## Rejected (the recording contradicts the suggestion)", "",
+            "The model corrected these toward the textbook, but the engines agree "
+            "with the original wording. Left exactly as spoken.", ""]
+    for v in groups["CONTRADICTED"]:
+        out.append(f"- `{hhmm(v['at'])}` “{v['find']}” → ~~{v['replace']}~~ — "
+                   f"{v['reason']}")
+    out += ["", "## Needs a human ear", "",
+            "Neither wording could be confirmed. Worth listening to before "
+            "relying on these passages.", ""]
+    for v in groups["UNRESOLVED"]:
+        out.append(f"- `{hhmm(v['at'])}` “{v['find']}” → ? **{v['replace']}** — "
+                   f"{v['reason']}")
+    out.append("")
+    return "\n".join(out)
+
+
 def audit(meta, fingerprint, segments, secs, flagged, changes, warnings):
     lps = [s["avg_logprob"] for s in segments]
     return json.dumps({

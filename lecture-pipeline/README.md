@@ -63,6 +63,35 @@ for "releases the repressor", "laxative" for "lacZ"). Cross-engine disagreement
 did. So `agree.py` decides what gets flagged for re-listening, and self-reported
 confidence is only a fallback for single-engine runs.
 
+## The review pass (`--review`)
+
+A language model proof-reads the transcript for biology and lab-method errors the
+lexicon cannot catch, then **every proposal is checked against the recording**
+before anything is applied: the disputed moment is re-transcribed by independent
+engines, and a correction is kept only if an engine that never saw the suggestion
+actually heard it.
+
+This matters more than it sounds. On this lecture the model made 18 proposals and
+**10 were contradicted by the audio** - it was correcting toward the textbook
+where the instructor had said something else. Applying them unchecked would have
+put fabrications into a study aid, including flipping "exons" to "introns" in a
+sentence where she really did say exons. Verdicts:
+
+- `CONFIRMED` - an independent engine heard the proposed wording. Applied.
+- `CONTRADICTED` - the engines agree with the original. Left as spoken.
+- `UNRESOLVED` - neither could be confirmed. Listed for a human to listen to.
+
+Guards on the model itself: it may only replace spans of at most six words, must
+quote them verbatim, and any span not found in the real text is dropped. Applied
+edits are scoped to the timestamp that was verified, so a short generic phrase is
+not rewritten elsewhere in the lecture.
+
+Everything proposed, applied and rejected is written to `<slug>.review.md`.
+
+**This stage is not reproducible.** The ASR config is deterministic; the review
+model is not, and proposals vary between runs. Treat `review.md` as a record of
+one review, not a fixed property of the transcript.
+
 ## Measuring it
 
 ```bash

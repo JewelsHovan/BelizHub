@@ -37,6 +37,9 @@ def main():
     ap.add_argument("--backend", choices=["local", "api", "both", "best"],
                     default="local",
                     help="best = gpt-transcribe wording fused onto whisper-1 timings")
+    ap.add_argument("--review", action="store_true",
+                    help="LLM review pass, with every proposal verified against "
+                         "the recording before it is applied")
     ap.add_argument("--outdir", default="out")
     ap.add_argument("--workdir", default="work")
     args = ap.parse_args()
@@ -130,6 +133,54 @@ def main():
     print(f"      {sum(n for _, _, n in changes)} substitution(s) across "
           f"{len(changes)} rule(s)")
 
+    verified = []
+    if args.review:
+        import review as reviewer
+        import verify as verifier
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "eval"))
+        import engines as engine_pool
+
+        print(f"[4b/6] Review pass ({reviewer.MODEL})")
+        rcache = work / "review.json"
+        if rcache.exists():
+            cached = json.loads(rcache.read_text())
+            proposals, blocked, rerrs = cached["p"], cached["b"], cached["e"]
+            print("      reused cached review proposals")
+        else:
+            proposals, blocked, rerrs = reviewer.review(segments)
+            rcache.write_text(json.dumps({"p": proposals, "b": blocked, "e": rerrs}))
+        print(f"      {len(proposals)} proposal(s); {len(blocked)} blocked by "
+              f"anti-rewrite guards; {len(rerrs)} error(s)")
+        if proposals:
+            print("      verifying each against the recording")
+            pool = {
+                "gemini-3.5-transcribe": engine_pool.ENGINES["gemini-3.5-transcribe"],
+                "gpt-4o-mini-transcribe": engine_pool.ENGINES["openai_gpt4o_mini"],
+                "whisper-1": engine_pool.ENGINES["openai_whisper1"],
+            }
+            vcache = work / "verified.json"
+            if vcache.exists():
+                verified = json.loads(vcache.read_text())
+                print("      reused cached audio verification")
+            else:
+                verified = verifier.verify(proposals, wav, pool)
+                vcache.write_text(json.dumps(verified))
+            confirmed = [v for v in verified if v["verdict"] == "CONFIRMED"]
+            counts = {}
+            for v in verified:
+                counts[v["verdict"]] = counts.get(v["verdict"], 0) + 1
+            print(f"      {counts}")
+            segments, applied = reviewer.apply(segments, confirmed,
+                                               min_confidence="medium")
+            for c in applied:
+                changes.append((c["find"], c["replace"], c["occurrences"]))
+            print(f"      applied {len(applied)} audio-confirmed correction(s); "
+                  f"{len(verified) - len(confirmed)} left for a human to check")
+            warnings.append(
+                f"LLM review proposed {len(verified)} corrections; only the "
+                f"{len(confirmed)} an independent engine could hear in the audio "
+                f"were applied. The rest are listed for checking, not applied.")
+
     drift = None
     contested = []
     if crosscheck:
@@ -182,8 +233,15 @@ def main():
     if drift is not None:
         fingerprint["crosscheck_drift"] = drift
         fingerprint["contested_terms"] = contested[:20]
+    if verified:
+        fingerprint["review"] = [
+            {k: v[k] for k in ("at", "find", "replace", "reason", "verdict",
+                               "confidence", "category", "heard_new")}
+            for v in verified]
     (out / f"{slug}.audit.json").write_text(
         emit.audit(meta, fingerprint, segments, secs, review, changes, warnings))
+    if verified:
+        (out / f"{slug}.review.md").write_text(emit.to_review(meta, verified))
     (out / f"{slug}.segments.json").write_text(json.dumps(segments, indent=2))
     if crosscheck:
         (out / f"{slug}.crosscheck.txt").write_text(crosscheck)
