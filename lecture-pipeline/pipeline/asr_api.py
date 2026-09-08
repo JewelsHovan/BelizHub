@@ -8,6 +8,10 @@ course vocabulary and is used as an independent cross-check.
 
 from lexicon import INITIAL_PROMPT
 
+# Overridden per course by run.py from the accumulated, registry-verified
+# vocabulary in courses/<course>.json.
+PROMPT = INITIAL_PROMPT
+
 TIMED_MODEL = "whisper-1"              # only OpenAI ASR model returning segments
 # Benchmarked winner: 0 mis-heard course terms and the lowest mean WER to the
 # multi-engine consensus (19.3%) across 11 engines. Cannot return timestamps,
@@ -28,7 +32,7 @@ def timed_segments(chunks):
         with open(chunk["path"], "rb") as fh:
             r = client.audio.transcriptions.create(
                 model=TIMED_MODEL, file=fh, language="en",
-                prompt=INITIAL_PROMPT, response_format="verbose_json",
+                prompt=PROMPT, response_format="verbose_json",
             )
         off = chunk["offset"]
         for s in r.segments or []:
@@ -55,7 +59,7 @@ def plain_text(chunks, model=ACCURATE_MODEL):
     for chunk in chunks:
         with open(chunk["path"], "rb") as fh:
             r = client.audio.transcriptions.create(
-                model=model, file=fh, language="en", prompt=INITIAL_PROMPT,
+                model=model, file=fh, language="en", prompt=PROMPT,
             )
         parts.append(r.text.strip())
     return " ".join(parts)

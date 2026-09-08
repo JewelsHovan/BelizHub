@@ -162,6 +162,38 @@ def to_review(meta, verified):
     return "\n".join(out)
 
 
+def to_entities(meta, confirmed, suspect):
+    """Which biological names were checked against public registries."""
+    out = [f"# Biological names — {meta['title']}", "",
+           "Every name below was looked up in a public registry (HGNC, UniProt, "
+           "PubChem, Cellosaurus, NCBI Taxonomy). This checks the name EXISTS; "
+           "it does not check the lecture used it correctly.", "",
+           f"**{len(confirmed)} confirmed · {len(suspect)} unresolved**", "",
+           "## Confirmed", ""]
+    for e in confirmed:
+        c = e["check"]
+        r = c.get("record", {})
+        ident = r.get("id") or r.get("accession") or r.get("cid") or r.get("taxon") or ""
+        note = f" — {r.get('name')}" if r.get("name") else ""
+        out.append(f"- **{e['text']}** ({c.get('kind','')}) — {r.get('source','')}"
+                   f"{' ' + str(ident) if ident else ''}{note}")
+    out += ["", "## Not found in any registry", "",
+            "Either a mis-hearing, or something specific to this course "
+            "(a construct, a group name, a local label).", ""]
+    for e in suspect:
+        if e.get("likely_asr_error"):
+            flag = "possibly a mis-hearing"
+        elif e.get("descriptive_phrase"):
+            flag = "a descriptive phrase, not a catalogued name"
+        else:
+            flag = "used repeatedly, so probably real"
+        sug = e["check"].get("suggestions")
+        out.append(f"- `{hhmm(e['at'])}` **{e['text']}** — said {e['mentions']}×, "
+                   f"{flag}" + (f" (near: {', '.join(sug)})" if sug else ""))
+    out.append("")
+    return "\n".join(out)
+
+
 def audit(meta, fingerprint, segments, secs, flagged, changes, warnings):
     lps = [s["avg_logprob"] for s in segments]
     return json.dumps({

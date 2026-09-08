@@ -92,6 +92,63 @@ Everything proposed, applied and rejected is written to `<slug>.review.md`.
 model is not, and proposals vary between runs. Treat `review.md` as a record of
 one review, not a fixed property of the transcript.
 
+## Names checked against public registries (`--review`)
+
+Gene, protein, reagent, cell-line and organism names are extracted from the
+transcript and looked up in the registries that actually decide the question:
+
+| Registry | Covers |
+| --- | --- |
+| HGNC | approved human gene symbols, aliases, withdrawn symbols |
+| UniProt | proteins and genes in any organism, plus taxonomy |
+| PubChem | reagents, buffers, substrates |
+| Cellosaurus | cell lines |
+
+All keyless; results cached in `work/ontology_cache.json`.
+
+A model alone cannot do this. It will endorse a gene it invented and reject a
+real but unfamiliar one. But a registry alone cannot do it either - it has no
+idea that "receptor" in a given sentence is a common noun. So the model decides
+*whether a phrase is a name*, and the registry decides *whether that name is
+real*.
+
+Precision matters more than recall here, because a false "valid" certifies a
+mis-hearing as biology. Every one of these was a real false positive found while
+building it, and each is now handled:
+
+- `laxative` matched a UniProt "Laxative peptide" - common nouns are stoplisted.
+- `beta-galactosidase` matched glucose, because PubChem lists it as a synonym of
+  beta-D-galactose - `-ase` names route to the protein registries first.
+- `Taq polymerase` matched gene LEO1 through loose alias scoring - alias hits are
+  re-fetched and required to match exactly.
+- `HeLa` matched a protein called helA - cell lines resolve before protein names.
+- `lacZ gene` matched nothing - descriptor words are stripped and the head name
+  retried.
+
+**Absence from a registry is not evidence of an error.** "poly-A tail" and
+"silica surface" are correct but catalogued nowhere, so unresolved names are
+split into probable mis-hearings (odd single tokens) and ordinary descriptive
+phrases. Results go to `<slug>.entities.md`.
+
+## Course profiles: getting better per class
+
+`courses/<course>.json` accumulates every registry-confirmed name from every
+lecture in that course. It is **gitignored** - it is derived from her recordings,
+and this repository is public. The pipeline rebuilds it as lectures are processed. The next lecture is primed with that vocabulary instead
+of a hand-written prompt, so the recogniser improves as more of a course is
+transcribed - and because the vocabulary is verified, priming cannot teach it a
+word that does not exist.
+
+```bash
+python pipeline/run.py lecture2.m4a --course BTEC620 --title "Lecture 2" \
+  --backend best --review        # primed by what lecture 1 established
+```
+
+This is what generalises the pipeline beyond one recording: nothing in it is
+specific to BTEC620 except the contents of that JSON file, which the pipeline
+writes itself. `pipeline/lexicon.py` remains a hand-written fallback for a
+course with no profile yet.
+
 ## Measuring it
 
 ```bash

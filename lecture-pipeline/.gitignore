@@ -6,6 +6,8 @@
 work/
 # transcripts, notes, audit files
 out/
+# course vocabulary is derived from her lectures; the pipeline rebuilds it
+courses/
 
 .venv/
 __pycache__/

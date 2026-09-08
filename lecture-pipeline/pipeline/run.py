@@ -44,6 +44,8 @@ def main():
     ap.add_argument("--workdir", default="work")
     args = ap.parse_args()
 
+    import course as course_profile
+    profile = course_profile.load(args.course)
     src = Path(args.audio).expanduser()
     if not src.exists():
         sys.exit(f"No such audio file: {src}")
@@ -53,10 +55,17 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     warnings = []
 
+    if profile.get("vocabulary"):
+        print(f"[0/6] Course profile: {len(profile['vocabulary'])} verified term(s) "
+              f"from {len(profile.get('lectures', []))} previous lecture(s)")
     print(f"[1/6] Normalising audio ({src.name})")
     wav = audio.normalise(src, work / "audio16k.wav")
     total = audio.duration(wav)
     print(f"      {total/60:.1f} min at 16 kHz mono, -16 LUFS")
+
+    if profile.get("vocabulary"):
+        import asr_api as _api
+        _api.PROMPT = course_profile.prompt(profile)
 
     chunks = None
     if args.backend in ("api", "both", "best"):
@@ -245,6 +254,25 @@ def main():
     (out / f"{slug}.segments.json").write_text(json.dumps(segments, indent=2))
     if crosscheck:
         (out / f"{slug}.crosscheck.txt").write_text(crosscheck)
+
+    if args.review:
+        import entities as ent
+        print("[6b/6] Validating biological names against public registries")
+        found = ent.validate(ent.extract(segments))
+        conf, susp, _gen = ent.triage(found)
+        profile = course_profile.update(profile, slug, conf)
+        ppath = course_profile.save(profile)
+        unresolved = [e for e in susp if e.get("likely_asr_error")]
+        print(f"      {len(conf)} name(s) confirmed; {len(unresolved)} resolve "
+              f"nowhere and may be mis-hearings")
+        print(f"      course vocabulary now {len(profile['vocabulary'])} term(s) "
+              f"-> {ppath.name}")
+        (out / f"{slug}.entities.md").write_text(
+            emit.to_entities(meta, conf, susp))
+        if unresolved:
+            warnings.append(
+                f"{len(unresolved)} biological name(s) matched no public registry: "
+                + ", ".join(e["text"] for e in unresolved[:8]))
 
     print(f"\nWrote to {out}/:")
     for suffix in ("vtt", "txt", "readable.md", "notes.md", "audit.json", "segments.json"):
