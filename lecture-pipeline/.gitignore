@@ -1,0 +1,14 @@
+# Private study material must never reach this public repository.
+# Comments live on their own lines: git treats a trailing "# ..." as part of
+# the pattern, so "work/  # cache" silently ignores nothing.
+
+# normalised audio, chunks, cached engine output
+work/
+# transcripts, notes, audit files
+out/
+
+.venv/
+__pycache__/
+*.wav
+*.mp3
+*.m4a
