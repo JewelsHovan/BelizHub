@@ -65,7 +65,8 @@ def prompt(profile, extra=()):
                                     -kv[1].get("mentions", 0)))
     terms = [k for k, _ in ranked][:MAX_PROMPT_TERMS]
     terms += [t for t in extra if t not in terms]
+    base = profile.get("decoder_context") or BASE
     if not terms:
-        return BASE
-    return (f"{BASE} Vocabulary used in {profile['course']}: "
+        return base
+    return (f"{base} Vocabulary used in {profile['course']}: "
             + ", ".join(terms) + ".")

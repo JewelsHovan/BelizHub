@@ -84,14 +84,23 @@ for entry in LEXICON:
         _SUBS.append((re.compile(r"\b" + re.escape(wrong) + r"\b", re.IGNORECASE), entry["term"]))
 
 
-def correct(text):
+def compile_subs(lexicon):
+    """Substitution rules from a course profile's {"canonical": ["mis-hearing", ...]}."""
+    return [(re.compile(r"\b" + re.escape(w) + r"\b", re.IGNORECASE), term)
+            for term, wrongs in lexicon.items() for w in wrongs]
+
+
+def correct(text, subs=None):
     """Apply conservative, evidence-backed lexicon substitutions.
+
+    `subs` (from compile_subs) replaces the built-in BTEC620 rules - their
+    "fixes" (essay -> assay, opera -> operon) are wrong in other subjects.
 
     Returns (corrected_text, [(wrong, right, count), ...]) so every change stays
     auditable rather than silently rewriting what the instructor said.
     """
     changes = []
-    for rx, right in _SUBS:
+    for rx, right in (_SUBS if subs is None else subs):
         text, n = rx.subn(right, text)
         if n:
             changes.append((rx.pattern, right, n))

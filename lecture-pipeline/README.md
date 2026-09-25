@@ -19,14 +19,18 @@ just lecture '<signed .m3u8 url>' lecture-3 "Lecture 3 — Microbial Fermentatio
 ```
 
 That downloads the recording, trims the dead air, transcribes it, and writes
-`out/lecture-3.slides.docx`. Run `just` alone to list every command.
+`out/lecture-3.study.html` (slide-by-slide study page with a notes/transcript
+toggle) and `out/lecture-3.slides.docx` (the same material as context for an AI).
+Run `just` alone to list every command.
 
 Pieces, if you want them separately:
 
 - **`fetch_lecture.py`** — download a recording from its signed HLS URL (parallel
   ranged fetch → lossless MP4 → trims trailing dead air).
 - **`pipeline/run.py`** — audio/video → transcript, study map, `.vtt` (below).
-- **`slidedoc.py`** — video + transcript → the slide-aligned Word document.
+- **`slidedoc.py`** — video + transcript → one entry per distinct slide (Word, Markdown, JSON).
+- **`slidenotes.py`** — succinct study notes per slide, from its text and transcript only.
+- **`studypage.py`** — the self-contained HTML study page.
 
 ## The transcription pipeline
 
@@ -167,7 +171,30 @@ python pipeline/run.py lecture2.m4a --course BTEC620 --title "Lecture 2" \
 
 This is what generalises the pipeline beyond one recording: nothing in it is
 specific to BTEC620 except the contents of that JSON file, which the pipeline
-writes itself. `pipeline/lexicon.py` remains a hand-written fallback for a
+writes itself.
+
+A profile can also describe its course, which matters when the subject changes
+(the default prompts assume a molecular-biology lab course). Add these keys by
+hand; the pipeline keeps them:
+
+```json
+{
+  "title": "BTEC 501 — Bioinformatics",
+  "lecturer": "Dr. …",
+  "decoder_context": "University lecture in bioinformatics: sequence alignment, …",
+  "review_context": "a university bioinformatics lecture (…), recorded over Zoom. …",
+  "review_examples": "PAM250, BLOSUM62, BLASTP, E-value, …",
+  "lexicon": {"BLOSUM": ["blossom"], "k-tuple": ["K-two-POL"]}
+}
+```
+
+`title`/`lecturer` go on the documents, `decoder_context` primes the recogniser,
+and `review_context`/`review_examples` tell the review pass what subject it is
+proof-reading and which unusual terms are correct. `lexicon` maps a term to
+mis-hearings actually seen in that course; when present it **replaces** the
+built-in BTEC620 rules in `pipeline/lexicon.py`, whose fixes (essay → assay,
+opera → operon) are wrong in other subjects. It is the place for homophones the
+review pass cannot confirm by re-listening ("blossom" and "BLOSUM" sound the same). `pipeline/lexicon.py` remains a hand-written fallback for a
 course with no profile yet.
 
 ## Measuring it

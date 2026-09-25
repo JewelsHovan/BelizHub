@@ -20,9 +20,13 @@ WINDOW = 22          # segments per review window
 OVERLAP = 3          # shared segments so errors on a seam are still seen
 MAX_SPAN_WORDS = 6   # a "correction" longer than this is a rewrite, not a fix
 
-SYSTEM = """You are proof-reading an automatic transcript of a university
-molecular-biotechnology laboratory lecture (McGill BTEC620). The audio was a
-phone on a desk, so the speech recogniser mis-hears technical vocabulary.
+# Course framing; a course profile's "context" / "examples" replace these.
+CONTEXT = """a university molecular-biotechnology laboratory lecture (McGill
+BTEC620). The audio was a phone on a desk, so the speech recogniser mis-hears
+technical vocabulary."""
+EXAMPLES = "p53, pGEM-T, X-gal, lacZ, GAPDH, guanidine thiocyanate"
+
+SYSTEM = """You are proof-reading an automatic transcript of {context}
 
 Find places where the transcript says something that is WRONG as biology or as
 lab practice, and where a near-homophone is clearly what the instructor said.
@@ -30,6 +34,7 @@ lab practice, and where a near-homophone is clearly what the instructor said.
 Report ONLY:
 - gene, protein, plasmid, vector, reagent, enzyme, kit, organism or cell-line names
 - laboratory technique names
+- software, database, algorithm and scoring-matrix names
 - numbers, units, concentrations, temperatures
 - words where the sentence is biologically impossible as transcribed
 
@@ -44,10 +49,10 @@ Rules:
 - `replace` must be the same kind of thing, similar length. Never a sentence.
 - If you are not confident the instructor said your replacement, omit it.
 - An unusual term that is correct biology is NOT an error. The lecturer really
-  does discuss p53, pGEM-T, X-gal, lacZ, GAPDH, guanidine thiocyanate.
+  does discuss {examples}.
 
 Return JSON: {"corrections":[{"find":"...","replace":"...","reason":"...",
-"category":"gene|reagent|technique|cell_line|number|other","confidence":"high|medium|low"}]}
+"category":"gene|reagent|technique|tool|cell_line|number|other","confidence":"high|medium|low"}]}
 Return {"corrections":[]} if the passage is clean."""
 
 
@@ -61,12 +66,12 @@ def _windows(segments):
             break
 
 
-def _review_window(client, chunk):
+def _review_window(client, chunk, system=SYSTEM):
     text = " ".join(s["text"] for s in chunk)
     try:
         r = client.chat.completions.create(
             model=MODEL,
-            messages=[{"role": "system", "content": SYSTEM},
+            messages=[{"role": "system", "content": system},
                       {"role": "user", "content": f"Passage:\n\n{text}"}],
             response_format={"type": "json_object"},
         )
@@ -92,8 +97,11 @@ def _valid(find, replace, text):
     return None
 
 
-def review(segments, model=MODEL, workers=6):
+def review(segments, model=MODEL, workers=6, context=None, examples=None):
     """Return (accepted, rejected, errors) proposals. Applies nothing."""
+    # str.replace, not .format: the prompt's JSON example is full of braces
+    system = (SYSTEM.replace("{context}", context or CONTEXT)
+                    .replace("{examples}", examples or EXAMPLES))
     from openai import OpenAI
     client = OpenAI()
     global MODEL
@@ -105,7 +113,7 @@ def review(segments, model=MODEL, workers=6):
 
     def run(job):
         start, chunk = job
-        text, props = _review_window(client, chunk)
+        text, props = _review_window(client, chunk, system)
         return start, chunk, text, props
 
     with ThreadPoolExecutor(max_workers=workers) as pool:

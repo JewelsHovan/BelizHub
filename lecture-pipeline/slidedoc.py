@@ -1,11 +1,14 @@
-"""Slide-aligned lecture notes: a screen-capture recording + its transcript -> a
-Word document with one entry per slide (the 720p slide image, its timecode
-range, and the transcript spoken while that slide was up).
+"""Slide-aligned lecture notes: a screen-capture recording + its transcript ->
+one entry per distinct slide (its image, the text on it, its visits, and the
+transcript spoken over it) as a Word document, Markdown, and slide JSON for the
+notes and study page.
 
-Slides are found by frame-differencing the video (robust for text slides, where
-scene-score detectors fail), then near-identical consecutive frames are merged
-with a perceptual hash so a moving laser-pointer dot doesn't split one slide in
-two -- while genuine animation builds are kept as separate steps.
+Slide changes are found by frame-differencing the video (robust for text
+slides, where scene-score detectors fail). The frames are then OCR'd and
+grouped: webcam/pointer-only changes and animation builds merge into one entry
+(keeping the fully built slide), a slide the lecturer returns to gains a visit
+instead of a duplicate entry, and brief frames (flipping past slides, the
+PowerPoint editor) fold into the slide around them.
 
   uv run python slidedoc.py \
       --video lecture.mp4 --transcript out/<slug>.segments.json \
@@ -18,7 +21,6 @@ Everything it reads and writes is transient/private; nothing is committed.
 import argparse
 import json
 import subprocess
-import tempfile
 from io import BytesIO
 from pathlib import Path
 
@@ -53,7 +55,11 @@ def detect_changes(video, work, step=2, w=96, h=54, min_gap=8.0):
     a = np.fromfile(raw, dtype=np.uint8)
     n = a.size // (w * h)
     a = a[:n * w * h].reshape(n, w * h).astype(np.int16)
-    mad = np.abs(np.diff(a, axis=0)).mean(axis=1)
+    d = np.abs(np.diff(a, axis=0))
+    mad = d.mean(axis=1)
+    # Pixels that change in many samples are live video (the speaker's webcam,
+    # a Zoom tile), not slide content; slide comparisons ignore them.
+    live = ((d > 12).mean(axis=0) > 0.08).reshape(h, w)
     # threshold: well above the static baseline, below real slide-flip spikes
     med, q75 = np.percentile(mad, 50), np.percentile(mad, 75)
     thr = max(6.0, med + 6 * (q75 - med + 1e-6))
@@ -63,7 +69,7 @@ def detect_changes(video, work, step=2, w=96, h=54, min_gap=8.0):
         if changes and t - changes[-1] < min_gap:
             continue
         changes.append(t)
-    return changes, float(thr)
+    return changes, float(thr), live
 
 
 def extract_frames(video, bounds, slides_dir):
@@ -83,41 +89,166 @@ def extract_frames(video, bounds, slides_dir):
     return segs
 
 
-def dhash_bits(path, hx=16, hy=16):
-    im = Image.open(path).convert("L").resize((hx + 1, hy), Image.LANCZOS)
-    px = np.asarray(im, dtype=np.int16)
-    return (px[:, :-1] < px[:, 1:]).flatten()
+CMP_W, CMP_H = 160, 90
 
 
-def dedup(segs, thr=12):
-    """Merge consecutive near-identical slides (pointer-only changes)."""
-    out = []
-    last_h = None
-    for s in segs:
-        h = dhash_bits(s["img"])
-        if out and last_h is not None and int(np.count_nonzero(h != last_h)) <= thr:
-            out[-1]["end"] = s["end"]          # extend, keep first image
+def ocr(segs, workers=8):
+    """Slide text via tesseract (if installed): the best signal for "is this
+    the same slide", and useful context in its own right."""
+    import re
+    import shutil
+    from concurrent.futures import ThreadPoolExecutor
+    if not shutil.which("tesseract"):
+        for sg in segs:
+            sg["text"], sg["words"] = "", set()
+        return False
+
+    def one(sg):
+        r = subprocess.run(["tesseract", sg["img"], "-", "--psm", "3"],
+                           capture_output=True, text=True)
+        return r.stdout
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for sg, text in zip(segs, pool.map(one, segs)):
+            sg["text"] = "\n".join(l.strip() for l in text.splitlines() if l.strip())
+            sg["words"] = set(re.findall(r"[a-z0-9]{3,}", text.lower()))
+    return True
+
+
+def _thumb(path):
+    im = Image.open(path).convert("L").resize((CMP_W, CMP_H), Image.BILINEAR)
+    return np.asarray(im, dtype=np.int16)
+
+
+class Matcher:
+    """Pairwise slide relations on masked thumbnails + OCR word sets."""
+
+    def __init__(self, segs, live):
+        from scipy.ndimage import binary_dilation
+        m = Image.fromarray(live.astype(np.uint8) * 255).resize((CMP_W, CMP_H))
+        self.keep = ~binary_dilation(np.asarray(m) > 0, iterations=3)
+        for sg in segs:
+            sg["px"] = _thumb(sg["img"])
+
+    def pix(self, a, b):
+        """Fraction of (non-live) pixels that clearly differ."""
+        ch = (np.abs(a["px"] - b["px"]) > 40) & self.keep
+        return ch.sum() / self.keep.sum()
+
+    def added(self, a, b):
+        """Of the pixels that changed a -> b, the share that were blank
+        background in a: ~1.0 for an animation build, low for a new layout."""
+        ch = (np.abs(a["px"] - b["px"]) > 40) & self.keep
+        if not ch.any():
+            return 1.0
+        v, c = np.unique(a["px"][self.keep] // 8, return_counts=True)
+        bg = v[c.argmax()] * 8 + 4
+        return ((np.abs(a["px"] - bg) < 24) & ch).sum() / ch.sum()
+
+    @staticmethod
+    def jaccard(a, b):
+        u = a["words"] | b["words"]
+        return len(a["words"] & b["words"]) / len(u) if u else 1.0
+
+    def same(self, a, b):
+        if self.pix(a, b) < 0.008:
+            return True
+        return (min(len(a["words"]), len(b["words"])) >= 5
+                and self.jaccard(a, b) >= 0.85)
+
+    def build(self, a, b):
+        """b is a (text) superset of a: a bullet or figure appeared."""
+        wa, wb = a["words"], b["words"]
+        return len(wa) >= 3 and len(wb) > len(wa) and len(wa & wb) / len(wa) >= 0.95
+
+
+def group(segs, live, min_dur=8.0):
+    """Collapse raw segments into one entry per distinct slide.
+
+    - identical frames (webcam / pointer only)      -> same entry
+    - an animation build of the slide just shown    -> same entry, final image
+    - a slide shown earlier (lecturer went back)    -> earlier entry, new visit
+    - a brief frame matching nothing (flipping
+      past slides, the PowerPoint editor, a pop-up) -> folded into the current
+    """
+    m = Matcher(segs, live)
+    groups, cur, last = [], None, None
+
+    def dur(sg):
+        return sg["end"] - sg["start"]
+
+    for sg in segs:
+        if cur is not None and m.same(last, sg):
+            cur["visits"][-1][1] = sg["end"]
+            cur["members"].append(sg)
+            if len(sg["words"]) > len(cur["rep"]["words"]) and dur(sg) >= dur(cur["rep"]):
+                cur["rep"] = sg
+        elif cur is not None and m.build(last, sg):
+            cur["visits"][-1][1] = sg["end"]
+            cur["members"].append(sg)
+            # a real build keeps the layout; a text superset with a new layout
+            # is usually the editor or a zoomed view -> keep the longer frame
+            if m.added(last, sg) >= 0.8 or dur(sg) >= dur(cur["rep"]):
+                cur["rep"] = sg
         else:
-            out.append(dict(s))
-            last_h = h
-    return out
+            prev = next((g for g in reversed(groups) if any(
+                m.same(x, sg) for x in g["members"])), None)
+            if prev is not None:
+                if prev is cur:                   # back after a folded pop-up
+                    cur["visits"][-1][1] = sg["end"]
+                else:
+                    prev["visits"].append([sg["start"], sg["end"]])
+                prev["members"].append(sg)
+                cur = prev
+            elif cur is not None and dur(sg) < min_dur:
+                cur["visits"][-1][1] = sg["end"]
+                last = sg                     # compare the next frame to what is on screen
+                continue
+            else:
+                cur = {"rep": sg, "members": [sg], "visits": [[sg["start"], sg["end"]]]}
+                groups.append(cur)
+        last = sg
+    return groups
 
 
-def align(segs, cues):
-    """Attach each transcript cue to the slide whose interval holds its midpoint."""
-    for s in segs:
-        s["cues"] = []
+def align(groups, cues):
+    """Attach each transcript cue to the slide visit that holds its midpoint."""
+    spans = sorted((v[0], v[1], g, k) for g in groups for k, v in enumerate(g["visits"]))
+    for g in groups:
+        g["cues"] = [[] for _ in g["visits"]]
     for c in cues:
         mid = (c["start"] + c["end"]) / 2
-        placed = False
-        for s in segs:
-            if s["start"] <= mid < s["end"]:
-                s["cues"].append(c)
-                placed = True
-                break
-        if not placed and segs:            # tail cue -> last slide
-            segs[-1]["cues"].append(c)
-    return segs
+        hit = next((sp for sp in spans if sp[0] <= mid < sp[1]), spans[-1] if spans else None)
+        if hit:
+            hit[2]["cues"][hit[3]].append(c)
+    return groups
+
+
+def title_of(text):
+    """First OCR line that reads like a heading."""
+    for line in text.splitlines():
+        line = line.strip(" .:-|")
+        if len(line) >= 4 and sum(ch.isalpha() for ch in line) >= 0.6 * len(line):
+            return line[:90]
+    return ""
+
+
+def to_records(groups):
+    """Plain, JSON-able slide records (what the notes + study page consume)."""
+    recs = []
+    for i, g in enumerate(groups, 1):
+        recs.append({
+            "n": i,
+            "image": g["rep"]["img"],
+            "title": title_of(g["rep"]["text"]),
+            "slide_text": g["rep"]["text"],
+            "visits": [{"start": round(v[0], 2), "end": round(v[1], 2),
+                        "cues": [{"start": c["start"], "end": c["end"],
+                                  "text": c["text"].strip(),
+                                  "flag": bool(c.get("needs_review"))} for c in cs]}
+                       for v, cs in zip(g["visits"], g["cues"])],
+        })
+    return recs
 
 
 def clean_image(path, max_w=1280):
@@ -132,11 +263,23 @@ def clean_image(path, max_w=1280):
     return buf
 
 
-def build_docx(segs, meta, out_path):
+def heading_of(r):
+    t = (r.get("notes") or {}).get("title") or r["title"]
+    return f"Slide {r['n']}" + (f" — {t}" if t else "")
+
+
+def visits_line(r):
+    spans = [f"{hms(v['start'])}–{hms(v['end'])}" for v in r["visits"]]
+    return "Shown " + spans[0] + ("" if len(spans) == 1 else " · back to it " + ", ".join(spans[1:]))
+
+
+def build_docx(recs, meta, out_path):
+    """One entry per distinct slide: image, the text on it, what was said."""
     doc = Document()
     normal = doc.styles["Normal"].font
     normal.name = "Calibri"
     normal.size = Pt(11)
+    grey = RGBColor(0x60, 0x60, 0x60)
 
     title = doc.add_heading(meta["title"], level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -147,41 +290,89 @@ def build_docx(segs, meta, out_path):
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p.runs[0].font.size = Pt(12)
 
-    n_flag = sum(1 for s in segs for c in s["cues"] if c.get("needs_review"))
+    n_flag = sum(c["flag"] for r in recs for v in r["visits"] for c in v["cues"])
     note = doc.add_paragraph()
-    r = note.add_run(
-        f"{len(segs)} slides · transcript by gpt-transcribe (cross-checked) · "
-        f"slide timings from the recording · {n_flag} passage(s) flagged for review "
-        f"are shown in italics. Personal study notes.")
-    r.font.size = Pt(9)
-    r.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+    rn = note.add_run(
+        f"{len(recs)} slides, each listed once: animation builds are merged and "
+        f"slides the lecturer returned to carry every visit. \"On the slide\" is "
+        f"OCR of the slide image; the transcript is gpt-transcribe (cross-checked, "
+        f"reviewed). {n_flag} passage(s) the engines disagreed on are in orange italics.")
+    rn.font.size = Pt(9)
+    rn.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
     note.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    for i, s in enumerate(segs, 1):
-        if i > 1:
-            doc.add_page_break()
+    for r in recs:
+        doc.add_page_break()
         head = doc.add_heading(level=1)
-        rh = head.add_run(f"Slide {i}")
-        rt = head.add_run(f"    {hms(s['start'])} – {hms(s['end'])}")
-        rt.font.size = Pt(12)
-        rt.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
-        doc.add_picture(clean_image(s["img"]), width=Inches(6.5))
+        head.add_run(heading_of(r))
+        sub = doc.add_paragraph()
+        rs = sub.add_run(visits_line(r))
+        rs.font.size = Pt(10)
+        rs.font.color.rgb = grey
+        doc.add_picture(clean_image(r["image"]), width=Inches(6.5))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        if not s["cues"]:
+        notes = (r.get("notes") or {}).get("notes") or []
+        if notes:
+            h = doc.add_paragraph()
+            rh = h.add_run("Summary (AI-written from the slide and transcript)")
+            rh.bold, rh.font.size = True, Pt(10)
+            for n in notes:
+                doc.add_paragraph(n, style="List Bullet")
+
+        if r["slide_text"]:
+            h = doc.add_paragraph()
+            rh = h.add_run("On the slide")
+            rh.bold, rh.font.size = True, Pt(10)
+            t = doc.add_paragraph()
+            rt = t.add_run(r["slide_text"])
+            rt.font.size, rt.font.color.rgb = Pt(9), grey
+
+        h = doc.add_paragraph()
+        rh = h.add_run("Transcript")
+        rh.bold, rh.font.size = True, Pt(10)
+        if not any(v["cues"] for v in r["visits"]):
             e = doc.add_paragraph("(no speech recorded on this slide)")
             e.runs[0].font.italic = True
             e.runs[0].font.color.rgb = RGBColor(0x99, 0x99, 0x99)
             continue
-        para = doc.add_paragraph()
-        for c in s["cues"]:
-            run = para.add_run(c["text"].strip() + " ")
-            if c.get("needs_review"):
-                run.font.italic = True
-                run.font.color.rgb = RGBColor(0x9A, 0x63, 0x00)
+        for v in r["visits"]:
+            if not v["cues"]:
+                continue
+            para = doc.add_paragraph()
+            if len(r["visits"]) > 1:
+                lab = para.add_run(f"[{hms(v['start'])}] ")
+                lab.bold, lab.font.color.rgb = True, grey
+            for c in v["cues"]:
+                run = para.add_run(c["text"] + " ")
+                if c["flag"]:
+                    run.font.italic = True
+                    run.font.color.rgb = RGBColor(0x9A, 0x63, 0x00)
 
     doc.save(out_path)
     return out_path, n_flag
+
+
+def build_md(recs, meta):
+    """The same content as plain Markdown - the lightest form to hand an LLM."""
+    out = [f"# {meta['title']}", "",
+           " · ".join(x for x in [meta.get("course"), meta.get("lecturer"), meta.get("date")] if x),
+           "", "_One section per distinct slide. \"On the slide\" is OCR of the slide; "
+           "the transcript is machine-generated; [?…?] marks passages the engines disagreed on._", ""]
+    for r in recs:
+        out += [f"## {heading_of(r)}", "", f"*{visits_line(r)}*", ""]
+        notes = (r.get("notes") or {}).get("notes") or []
+        if notes:
+            out += ["**Summary (AI-written):**", ""] + [f"- {n}" for n in notes] + [""]
+        if r["slide_text"]:
+            out += ["**On the slide:**", "", "> " + r["slide_text"].replace("\n", "\n> "), ""]
+        out += ["**Transcript:**", ""]
+        for v in r["visits"]:
+            if not v["cues"]:
+                continue
+            body = " ".join(f"[?{c['text']}?]" if c["flag"] else c["text"] for c in v["cues"])
+            out += [(f"[{hms(v['start'])}] " if len(r["visits"]) > 1 else "") + body, ""]
+    return "\n".join(out)
 
 
 def main():
@@ -189,45 +380,55 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--video", required=True)
     ap.add_argument("--transcript", required=True, help="<slug>.segments.json from run.py")
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out", required=True, help="out/<slug>.slides.docx (.md and .json written beside it)")
     ap.add_argument("--title", default="Lecture")
     ap.add_argument("--lecturer", default="")
     ap.add_argument("--course", default="")
     ap.add_argument("--date", default="")
     ap.add_argument("--step", type=float, default=2.0, help="sampling seconds for change detection")
-    ap.add_argument("--workdir", default="")
+    ap.add_argument("--workdir", default="", help="default: work/<slug>/slidedoc (kept for the study page)")
     args = ap.parse_args()
 
     video = str(Path(args.video).expanduser())
     cues = json.load(open(Path(args.transcript).expanduser()))
     dur = video_duration(video)
+    out_path = Path(args.out).expanduser()
+    stem = out_path.name.split(".")[0]
 
-    tmp = Path(args.workdir).expanduser() if args.workdir else Path(tempfile.mkdtemp(prefix="slidedoc_"))
+    tmp = Path(args.workdir).expanduser() if args.workdir else Path("work") / stem / "slidedoc"
     tmp.mkdir(parents=True, exist_ok=True)
     slides_dir = tmp / "slides"
 
-    print(f"[1/5] Detecting slide changes ({dur/60:.1f} min video)…")
-    changes, thr = detect_changes(video, tmp, step=args.step)
+    print(f"[1/6] Detecting slide changes ({dur/60:.1f} min video)…")
+    changes, thr, live = detect_changes(video, tmp, step=args.step)
     bounds = [0.0] + changes + [dur]
     print(f"      {len(changes)} changes (threshold {thr:.1f}) -> {len(bounds)-1} raw segments")
 
-    print("[2/5] Extracting full-res slide frames…")
+    print("[2/6] Extracting full-res slide frames…")
     segs = extract_frames(video, bounds, slides_dir)
 
-    print("[3/5] De-duplicating pointer-only repeats…")
-    segs = dedup(segs)
-    print(f"      -> {len(segs)} slides")
+    print("[3/6] Reading slide text (OCR)…")
+    if not ocr(segs):
+        print("      tesseract not found - grouping on pixels only (brew install tesseract)")
 
-    print(f"[4/5] Aligning {len(cues)} transcript cues to slides…")
-    segs = align(segs, cues)
+    print("[4/6] Grouping builds, revisits and pop-ups into distinct slides…")
+    groups = group(segs, live)
+    revisits = sum(len(g["visits"]) - 1 for g in groups)
+    print(f"      -> {len(groups)} slides ({revisits} return visit(s) merged)")
 
-    print("[5/5] Writing Word document…")
+    print(f"[5/6] Aligning {len(cues)} transcript cues to slides…")
+    recs = to_records(align(groups, cues))
+
+    print("[6/6] Writing Word document, Markdown and slide JSON…")
     meta = {"title": args.title, "lecturer": args.lecturer,
             "course": args.course, "date": args.date}
-    out_path = str(Path(args.out).expanduser())
-    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-    path, n_flag = build_docx(segs, meta, out_path)
-    print(f"\nWrote {path}  ({len(segs)} slides, {n_flag} flagged passages)")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    path, n_flag = build_docx(recs, meta, str(out_path))
+    md, js = out_path.with_name(stem + ".slides.md"), out_path.with_name(stem + ".slides.json")
+    md.write_text(build_md(recs, meta))
+    js.write_text(json.dumps({"meta": meta, "slides": recs}, indent=1))
+    print(f"\nWrote {path}  ({len(recs)} slides, {n_flag} flagged passages)")
+    print(f"      {md}  ·  {js}")
 
 
 if __name__ == "__main__":

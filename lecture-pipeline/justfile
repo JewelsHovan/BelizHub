@@ -4,14 +4,26 @@
 # Typical use, per lecture:
 #   1. just urls                 # copy the snippet, run it in the LRS tab's console
 #   2. just lecture '<signed .m3u8 url>' lecture-3 "Lecture 3 — Microbial Fermentation" 2026-09-18
+#
+# Another course: prefix with course=<CODE>, e.g.  just course=BTEC501 lecture ...
+# Its full title and lecturer come from courses/<code>.json ("title", "lecturer")
+# when that profile has them, else from the defaults below.
 
 # --- edit these defaults for your course ------------------------------------
 course      := "BIOT505"
-course_full := "BIOT 505 — Selected Topics in Biotechnology"
-lecturer    := "Prof. Maureen McKeague"
 course_id   := "97394"          # LRSWAPI course id (see `just urls`)
 backend     := "best"           # local | api | both | best  (see README)
+review      := "true"           # LLM review pass on the transcript (see README)
+default_course_full := "BIOT 505 — Selected Topics in Biotechnology"
+default_lecturer    := "Prof. Maureen McKeague"
 # ---------------------------------------------------------------------------
+
+_profile := "courses/" + lowercase(course) + ".json"
+_p_title := shell('test -f "$1" && jq -r ".title // empty" "$1" || true', _profile)
+_p_lect  := shell('test -f "$1" && jq -r ".lecturer // empty" "$1" || true', _profile)
+course_full := if _p_title == "" { default_course_full } else { _p_title }
+lecturer    := if _p_lect == "" { default_lecturer } else { _p_lect }
+_review_flag := if review == "true" { "--review" } else { "" }
 
 # list available commands
 default:
@@ -21,7 +33,7 @@ default:
 setup:
     test -d .venv || uv venv --python 3.12
     uv pip install -r requirements.txt
-    @echo "Ready. ffmpeg required too: brew install ffmpeg"
+    @echo "Ready. Also needed: brew install ffmpeg tesseract jq"
 
 # print the browser console snippet that copies your signed lecture URLs
 urls:
@@ -35,9 +47,9 @@ fetch url slug:
 transcribe media slug title date:
     uv run python pipeline/run.py '{{media}}' \
         --course '{{course}}' --slug '{{slug}}' --title '{{title}}' \
-        --date '{{date}}' --backend '{{backend}}'
+        --date '{{date}}' --backend '{{backend}}' {{_review_flag}}
 
-# 3) slide-aligned Word doc  ->  out/<slug>.slides.docx
+# 3) one entry per distinct slide  ->  out/<slug>.slides.{docx,md,json}  (docx/md: context for AI)
 slides media slug title date:
     uv run python slidedoc.py --video '{{media}}' \
         --transcript 'out/{{slug}}.segments.json' \
@@ -45,21 +57,29 @@ slides media slug title date:
         --title '{{title}}' --lecturer '{{lecturer}}' \
         --course '{{course_full}}' --date '{{date}}'
 
-# end-to-end: signed URL -> trimmed video -> transcript -> slide-aligned Word doc
-lecture url slug title date:
-    @just fetch '{{url}}' '{{slug}}'
-    @just transcribe 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
-    @just slides 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
-    @echo "\nDone → out/{{slug}}.slides.docx"
+# 4) succinct study notes per slide (LLM, cached)  ->  into out/<slug>.slides.json
+notes slug:
+    uv run python slidenotes.py 'out/{{slug}}.slides.json' --course '{{course_full}}'
+
+# 5) study pages  ->  out/<slug>.study.html (lean, to share) + .study-audio.html (lecture audio inside)
+study slug:
+    uv run python studypage.py 'out/{{slug}}.slides.json' --embed-audio
+
+# end-to-end: signed URL -> video -> transcript -> slides/doc -> notes -> study page
+lecture url slug title date: (fetch url slug) (transcribe "lectures/" + slug + ".mp4" slug title date) (redoc slug title date)
 
 # open chrome://extensions for loading the unpacked extension
 ext-dev:
 	open -a "Google Chrome" "chrome://extensions"
 
-# rebuild the slide doc from an already-downloaded video + transcript
-redoc slug title date:
-    @just slides 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
+# rebuild doc, notes and study page from an already-downloaded video + transcript
+redoc slug title date: (slides "lectures/" + slug + ".mp4" slug title date) (notes slug) (study slug)
+    @echo "\nDone → out/{{slug}}.study.html (share) · .study-audio.html (audio inside) · .slides.docx / .slides.md (AI context)"
 
-# open the finished document (macOS)
+# open the study page (macOS)
 open slug:
+    open 'out/{{slug}}.study.html'
+
+# open the Word document (macOS)
+open-doc slug:
     open 'out/{{slug}}.slides.docx'

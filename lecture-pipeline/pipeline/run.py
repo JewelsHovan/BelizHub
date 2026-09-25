@@ -65,7 +65,7 @@ def main():
     total = audio.duration(wav)
     print(f"      {total/60:.1f} min at 16 kHz mono, -16 LUFS")
 
-    if profile.get("vocabulary"):
+    if profile.get("vocabulary") or profile.get("decoder_context"):
         import asr_api as _api
         _api.PROMPT = course_profile.prompt(profile)
 
@@ -134,9 +134,13 @@ def main():
         crosscheck = " ".join(s["text"] for s in local_asr.transcribe(wav))
 
     print("[4/6] Applying lexicon corrections")
+    subs = None
+    if "lexicon" in profile:           # a course's own rules replace the BTEC620 set
+        from lexicon import compile_subs
+        subs = compile_subs(profile["lexicon"])
     changes_total = {}
     for seg in segments:
-        seg["text"], changes = correct(seg["text"])
+        seg["text"], changes = correct(seg["text"], subs)
         for pat, right, n in changes:
             key = (pat, right)
             changes_total[key] = changes_total.get(key, 0) + n
@@ -158,7 +162,9 @@ def main():
             proposals, blocked, rerrs = cached["p"], cached["b"], cached["e"]
             print("      reused cached review proposals")
         else:
-            proposals, blocked, rerrs = reviewer.review(segments)
+            proposals, blocked, rerrs = reviewer.review(
+                segments, context=profile.get("review_context"),
+                examples=profile.get("review_examples"))
             rcache.write_text(json.dumps({"p": proposals, "b": blocked, "e": rerrs}))
         print(f"      {len(proposals)} proposal(s); {len(blocked)} blocked by "
               f"anti-rewrite guards; {len(rerrs)} error(s)")
