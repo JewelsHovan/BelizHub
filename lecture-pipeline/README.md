@@ -1,16 +1,37 @@
 # Lecture pipeline
 
-Turns a lecture recording into a timestamped transcript, a study map, and a
-`.vtt` the [Lecture Desk](../lecture-desk/) imports directly.
+Turns a lecture recording into a timestamped transcript, a study map, a `.vtt` the
+[Lecture Desk](../lecture-desk/) imports directly, and a **Word document with each
+slide and the transcript spoken over it**.
 
-**Nothing it produces is committed.** `work/` and `out/` are ignored; the repo is
-public and lecture recordings are not.
+**Nothing it produces is committed.** `work/`, `out/`, `lectures/` and downloaded
+video are ignored; the repo is public and lecture recordings are not.
 
-## Use it
+## Quick start
+
+A [`justfile`](justfile) wraps the whole thing. See **[docs/GUIDE.md](docs/GUIDE.md)**
+for the full walkthrough.
 
 ```bash
-uv venv --python 3.12 && uv pip install mlx-whisper openai google-genai jiwer
-python pipeline/run.py "BTEC620 lecture 1.m4a" \
+just setup                                  # venv + requirements (once)
+just urls                                   # snippet to copy your signed URLs from the browser
+just lecture '<signed .m3u8 url>' lecture-3 "Lecture 3 — Microbial Fermentation" 2026-09-18
+```
+
+That downloads the recording, trims the dead air, transcribes it, and writes
+`out/lecture-3.slides.docx`. Run `just` alone to list every command.
+
+Pieces, if you want them separately:
+
+- **`fetch_lecture.py`** — download a recording from its signed HLS URL (parallel
+  ranged fetch → lossless MP4 → trims trailing dead air).
+- **`pipeline/run.py`** — audio/video → transcript, study map, `.vtt` (below).
+- **`slidedoc.py`** — video + transcript → the slide-aligned Word document.
+
+## The transcription pipeline
+
+```bash
+uv run python pipeline/run.py "BTEC620 lecture 1.m4a" \
   --course BTEC620 --title "Lecture 1" --date 2026-09-03 --backend best
 ```
 

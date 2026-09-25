@@ -1,0 +1,61 @@
+# Lecture pipeline — download a McGill recording and turn it into slide-aligned notes.
+# Run `just` with no args to see all commands.  Full guide: docs/GUIDE.md
+#
+# Typical use, per lecture:
+#   1. just urls                 # copy the snippet, run it in the LRS tab's console
+#   2. just lecture '<signed .m3u8 url>' lecture-3 "Lecture 3 — Microbial Fermentation" 2026-09-18
+
+# --- edit these defaults for your course ------------------------------------
+course      := "BIOT505"
+course_full := "BIOT 505 — Selected Topics in Biotechnology"
+lecturer    := "Prof. Maureen McKeague"
+course_id   := "97394"          # LRSWAPI course id (see `just urls`)
+backend     := "best"           # local | api | both | best  (see README)
+# ---------------------------------------------------------------------------
+
+# list available commands
+default:
+    @just --list --unsorted
+
+# one-time: create the venv and install dependencies
+setup:
+    test -d .venv || uv venv --python 3.12
+    uv pip install -r requirements.txt
+    @echo "Ready. ffmpeg required too: brew install ffmpeg"
+
+# print the browser console snippet that copies your signed lecture URLs
+urls:
+    @sed 's/COURSE_ID/{{course_id}}/g' docs/get-urls.js
+
+# 1) download + trim one lecture from its signed .m3u8 URL  ->  lectures/<slug>.mp4
+fetch url slug:
+    uv run python fetch_lecture.py --url '{{url}}' --name '{{slug}}'
+
+# 2) transcribe a media file  ->  out/<slug>.{vtt,txt,readable.md,notes.md,segments.json}
+transcribe media slug title date:
+    uv run python pipeline/run.py '{{media}}' \
+        --course '{{course}}' --slug '{{slug}}' --title '{{title}}' \
+        --date '{{date}}' --backend '{{backend}}'
+
+# 3) slide-aligned Word doc  ->  out/<slug>.slides.docx
+slides media slug title date:
+    uv run python slidedoc.py --video '{{media}}' \
+        --transcript 'out/{{slug}}.segments.json' \
+        --out 'out/{{slug}}.slides.docx' \
+        --title '{{title}}' --lecturer '{{lecturer}}' \
+        --course '{{course_full}}' --date '{{date}}'
+
+# end-to-end: signed URL -> trimmed video -> transcript -> slide-aligned Word doc
+lecture url slug title date:
+    @just fetch '{{url}}' '{{slug}}'
+    @just transcribe 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
+    @just slides 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
+    @echo "\nDone → out/{{slug}}.slides.docx"
+
+# rebuild the slide doc from an already-downloaded video + transcript
+redoc slug title date:
+    @just slides 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
+
+# open the finished document (macOS)
+open slug:
+    open 'out/{{slug}}.slides.docx'

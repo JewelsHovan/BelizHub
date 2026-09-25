@@ -1,0 +1,10 @@
+# Transcription
+openai==3.8.0            # whisper-1 timings + gpt-transcribe wording (api/best backends)
+google-genai==2.22.0     # Gemini cross-check engine
+mlx-whisper==0.4.3       # local, offline backend (Apple Silicon)
+jiwer==4.0.0             # WER scoring in eval/
+
+# Slide extraction + Word doc  (fetch_lecture.py needs only the stdlib)
+numpy==2.5.3
+pillow==12.3.0
+python-docx==1.2.0

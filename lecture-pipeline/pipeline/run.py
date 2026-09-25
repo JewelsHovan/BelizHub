@@ -42,6 +42,8 @@ def main():
                          "the recording before it is applied")
     ap.add_argument("--outdir", default="out")
     ap.add_argument("--workdir", default="work")
+    ap.add_argument("--slug", default="",
+                    help="output basename; defaults to slugify(course-title)")
     args = ap.parse_args()
 
     import course as course_profile
@@ -49,7 +51,7 @@ def main():
     src = Path(args.audio).expanduser()
     if not src.exists():
         sys.exit(f"No such audio file: {src}")
-    slug = slugify(f"{args.course}-{args.title}")
+    slug = args.slug or slugify(f"{args.course}-{args.title}")
     work = Path(args.workdir) / slug
     out = Path(args.outdir)
     out.mkdir(parents=True, exist_ok=True)
