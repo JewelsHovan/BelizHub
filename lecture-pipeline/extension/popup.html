@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg: #1a1a2e; --fg: #e0e0e0; --accent: #4e9af1; --dim: #888; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 360px; max-height: 440px; overflow-y: auto;
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--fg); padding: 10px 12px;
+  }
+  h1 { font-size: 14px; margin-bottom: 6px; }
+  #status { color: var(--dim); margin: 8px 0; font-size: 12px; min-height: 1.4em; }
+  .error { color: #e74c3c; }
+  #manual { display: none; margin: 6px 0; }
+  #manual input {
+    width: 100%; padding: 5px; border: 1px solid #333; border-radius: 4px;
+    background: #16213e; color: var(--fg); font: inherit;
+  }
+  #manual button { margin-top: 4px; }
+  .rec-list { list-style: none; }
+  .rec-list li {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 4px; border-bottom: 1px solid #2a2a4a;
+  }
+  .rec-list li:last-child { border-bottom: none; }
+  .date { color: var(--dim); white-space: nowrap; font-size: 12px; min-width: 72px; }
+  .title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button, .btn {
+    border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;
+    font: 12px/1.2 inherit; background: var(--accent); color: #fff;
+  }
+  button:hover { filter: brightness(1.15); }
+  button.copied { background: #2ecc71; }
+  #debug summary { cursor: pointer; color: var(--dim); font-size: 12px; margin-top: 8px; }
+  #debug pre {
+    white-space: pre-wrap; font-size: 10px; color: var(--dim);
+    max-height: 180px; overflow: auto; margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <h1>LRS URL Grabber</h1>
+  <div id="status">Loading recordings…</div>
+  <div id="manual">
+    <label for="courseIdInput">Course ID not detected &mdash; enter it manually:</label>
+    <input id="courseIdInput" type="text" placeholder="e.g. 97394" inputmode="numeric">
+    <button type="button" id="courseIdBtn">Fetch</button>
+  </div>
+  <ul class="rec-list" id="list"></ul>
+  <div id="courses" style="display:none; margin:6px 0;">
+    <label for="courseSelect">Course:</label>
+    <select id="courseSelect" style="width:100%; padding:4px; background:#16213e; color:var(--fg); border:1px solid #333; border-radius:4px;"></select>
+  </div>
+  <button type="button" id="scanBtn" style="margin-top:8px;">Find my other courses</button>
+  <details id="debug" style="display:none">
+    <summary>Debug</summary>
+    <pre id="debugOut"></pre>
+  </details>
+  <script src="popup.js"></script>
+</body>
+</html>

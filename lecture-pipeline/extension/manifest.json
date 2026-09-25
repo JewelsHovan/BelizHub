@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "LRS URL Grabber",
+  "version": "1.0.0",
+  "description": "Grab signed McGill lecture recording URLs from lrs.mcgill.ca",
+  "permissions": ["activeTab", "scripting", "webNavigation"],
+  "host_permissions": [
+    "https://lrs.mcgill.ca/*",
+    "https://LRSWAPI.campus.mcgill.ca/*",
+    "https://mycourses2.mcgill.ca/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

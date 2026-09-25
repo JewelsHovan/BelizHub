@@ -182,6 +182,29 @@ rate, degenerate lines, and a course-term audit. Repetition is measured
 *contiguously* on purpose — counting raw n-gram frequency mistook this
 lecturer's "we are going to be" for a decoding loop.
 
+## Chrome extension (optional)
+
+`extension/` is a Manifest V3 Chrome extension that replaces the `just urls`
+console snippet. Click the extension icon on a myCourses **Lecture Recordings**
+page and it reads your session token from the LRS app directly, auto-detects
+the course, and lists each recording with a **Copy** button that puts a
+ready-to-paste `just lecture` command on your clipboard. There's also a
+**Find my other courses** scanner and a Debug section (endpoints tried, JWT
+claims, store shapes) for when McGill changes something.
+
+```bash
+# Load it once in Chrome:
+just ext-dev          # opens chrome://extensions
+# → Enable Developer mode → Load unpacked → select lecture-pipeline/extension/
+```
+
+Works on the myCourses page (the LRS is a cross-origin iframe there — the
+extension finds and injects into it) or directly on `lrs.mcgill.ca`.
+
+What we learned about the LRS while building it — JWT claims, API map, where
+the Vue app hides its data — is written up in
+[docs/IDEAS.md](docs/IDEAS.md).
+
 ## Known limits
 
 - Section titles are TF-IDF keyword lists, not written summaries. They are

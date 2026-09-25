@@ -52,6 +52,10 @@ lecture url slug title date:
     @just slides 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'
     @echo "\nDone → out/{{slug}}.slides.docx"
 
+# open chrome://extensions for loading the unpacked extension
+ext-dev:
+	open -a "Google Chrome" "chrome://extensions"
+
 # rebuild the slide doc from an already-downloaded video + transcript
 redoc slug title date:
     @just slides 'lectures/{{slug}}.mp4' '{{slug}}' '{{title}}' '{{date}}'

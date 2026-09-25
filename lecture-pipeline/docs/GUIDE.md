@@ -27,7 +27,12 @@ Set your course once at the top of the `justfile` (`course`, `course_full`,
 find it by running `just urls` (it's baked into the snippet) or from the Network
 tab (`.../api/MediaRecordings/dto/<course_id>`).
 
-## 1. Get the signed URL (the only manual step)
+## 1. Get the signed URL
+
+**Easiest: the Chrome extension** — click its icon on the Lecture Recordings
+page, hit **Copy**, paste into the terminal. See the main
+[README](../README.md#chrome-extension-optional) for the one-time install.
+Everything below is the manual DevTools route.
 
 The recording streams from a URL that carries **your** session token, so you copy
 it from your own browser — the tools never handle your login.

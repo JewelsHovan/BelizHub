@@ -2,41 +2,37 @@
 
 Parking lot for future improvements. Nothing here is committed to — just notes.
 
-## Chrome extension to grab signed URLs (kills the token-expiry friction)
+## Chrome extension to grab signed URLs — ✅ IMPLEMENTED
 
-**Problem it solves.** The only manual, fiddly step today is copying a signed
-`.m3u8` URL from the browser (`just urls`), and those URLs expire after a few
-hours — so you often re-copy. A one-click button that always fetches a *fresh*
-URL would remove that entirely.
+Built and working in [`extension/`](../extension/) (see the main README). The
+reverse-engineering of McGill's LRS turned out to be the interesting part:
 
-**Cleanest design (Manifest V3):**
-- Content script with `"world": "MAIN"` injected on `lrs.mcgill.ca`. This is the
-  key trick: a normal (isolated-world) content script can't read the page's JS
-  variables, so it can't reach `$root.$store.state.token`. `world: "MAIN"` runs in
-  the page's own context and reads the Vue store token exactly like the console
-  snippet in `get-urls.js`.
-- It calls `LRSWAPI/MediaRecordings/dto/<courseId>`, gets the recordings, and
-  `postMessage`s them to the extension.
-- A popup lists each recording (date + title) with a per-lecture button that
-  copies a ready-to-run command, e.g.
-  `just lecture '<fresh url>' lecture-3 "…" 2026-09-18`. Paste into the terminal.
-
-**Permissions:** host access to `lrs.mcgill.ca` + `LRSWAPI.campus.mcgill.ca`. Small.
-
-**Optional upgrades:**
-- Auto-detect the course id from the current myCourses tab (no hardcoding).
-- Native messaging → hand the URL straight to `fetch_lecture.py`, skipping the
-  copy-paste. (Needs a small native-host manifest.)
-
-**Caveats:**
-- Personal/unlisted only — it rides your own session token; for your enrolled
-  courses, not for sharing.
-- Same fragility as the snippet: breaks if McGill changes the LRS Vue app or API.
-- Do NOT download inside the extension — 2.9 GB in-browser blows up memory (we hit
-  this). The extension's job is only to surface a fresh URL; downloading stays in
-  `fetch_lecture.py`.
-
-Estimated ~100 lines of MV3. Sweet spot: click button → paste → done.
+- **No content scripts.** The working design is popup → `chrome.scripting
+  .executeScript` with `world: "MAIN"`, targeted at the `lrs.mcgill.ca`
+  iframe myCourses embeds (found via `chrome.webNavigation.getAllFrames`).
+  MAIN-world content scripts get no `chrome.runtime`, and `allFrames` blind
+  injection misses the iframe — targeted programmatic injection is what works.
+- **The LTI launch mints a course-scoped JWT.** Claims include `LRSCourseId`,
+  `crn`, `role: "Student"`, `sToken`, `eTime`. The token sits in the Vuex
+  store at `state.token` (with `state.urlbaseAPI` holding the API base).
+- **Recordings are NOT in the Vuex store** on the list page — they sit in
+  component-local data (`activatorNode[0].fnContext.listofRecordings`),
+  reachable by walking the Vue component tree's `$data`.
+- **Course-ID discovery chain that works:** the page's own network log
+  (`performance.getEntriesByType('resource')` — the app itself calls
+  `MediaRecordings/dto/<id>`) → JWT claim `LRSCourseId` → deep search of
+  store/components.
+- **API map** (GET + bearer): `Course/<id>`, `Courses` (lists ~30 courses,
+  200), `MediaRecordings/dto/<courseId>`, `LRSAnnouncement`,
+  `VideoPlayerDefaults`. POST-only: bare `Course`, `ViewingClientInfo/`,
+  `WebPublishing/ProcessorsStatusDataByCourseId`.
+- **Cross-course fetches are not hard-blocked** (200, not 403) but returned no
+  recordings for a non-launched course id — each course's own myCourses
+  Lecture Recordings launch is the reliable path, and the extension
+  auto-detects the course either way.
+- The old console snippet fails on the myCourses tab because the LRS is a
+  cross-origin iframe — DevTools' console needs its frame-context dropdown
+  switched to the `lrs.mcgill.ca` frame.
 
 ## Higher-accuracy transcription (if the bio/chem vocab ever needs it)
 
