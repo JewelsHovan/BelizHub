@@ -12,7 +12,7 @@ Everything runs locally except the API calls; nothing you download is committed
 (this repo is public).
 
 ```
-signed URL ─► fetch_lecture.py ─► lectures/<slug>.mp4 ─┬─► run.py ─► segments.json ─┐
+./lp run ─► fetch_lecture.py ─► lectures/<slug>.mp4 ─┬─► run.py ─► segments.json ─┐
                                                        │                             ├─► slidedoc.py ─► .slides.docx / .md / .json
                                                        └─────────────────────────────┘                          │
                                                                         slidenotes.py (notes per slide) ◄───────┤
@@ -23,60 +23,61 @@ signed URL ─► fetch_lecture.py ─► lectures/<slug>.mp4 ─┬─► run.p
 
 ```bash
 cd lecture-pipeline
-just setup            # creates .venv, installs requirements.txt
-brew install ffmpeg tesseract jq   # tesseract reads slide text; jq reads course profiles
+brew install ffmpeg tesseract   # video tools; tesseract reads slide text
+just setup                      # creates .venv, installs requirements, runs ./lp check
 ```
 
-You also need, in your shell environment, an `OPENAI_API_KEY` for the `best`
-transcription backend (or use `backend := "local"` in the `justfile` to stay
-fully offline). Optional `GEMINI_API_KEY` adds a cross-check engine.
+Your shell needs `OPENAI_API_KEY` (transcription, review, notes). `GEMINI_API_KEY`
+is optional and adds a cross-check engine. `./lp check` says what's missing.
 
-Set your default course once at the top of the `justfile` (`course`,
-`default_course_full`, `default_lecturer`, `course_id`). For another course,
-prefix any command with `course=<CODE>` (e.g. `just course=BTEC501 lecture …`):
-the full title and lecturer then come from `courses/<code>.json` (`"title"`,
-`"lecturer"` — see the README's *Course profiles*). The `course_id` is the number in the LRSWAPI calls —
-find it by running `just urls` (it's baked into the snippet) or from the Network
-tab (`.../api/MediaRecordings/dto/<course_id>`).
+Load the Chrome extension once: `just ext-dev` → *Developer mode* → *Load
+unpacked* → `lecture-pipeline/extension/`.
 
-## 1. Get the signed URL
+**Everything is driven by `./lp`** (`./lp --help`); the `justfile` only holds
+shortcuts to it.
 
-**Easiest: the Chrome extension** — click its icon on the Lecture Recordings
-page, hit **Copy**, paste into the terminal. See the main
-[README](../README.md#chrome-extension-optional) for the one-time install.
-Everything below is the manual DevTools route.
-
-The recording streams from a URL that carries **your** session token, so you copy
-it from your own browser — the tools never handle your login.
+## 1. Tell it about the course (once per course)
 
 ```bash
-just urls        # prints a console snippet
+./lp course BTEC501 --title "BTEC 501 — Bioinformatics" --lecturer "Dr. …" \
+    --id <LRSWAPI course id> --subject "bioinformatics: sequence alignment, BLAST"
+./lp courses                     # what's set up; * marks the default
 ```
 
-- Open **myCourses → your course → Lecture Recordings**, let the list load.
-- Press **F12 → Console**, paste the snippet, Enter.
-- It prints a dated list of `.m3u8` URLs and copies them to your clipboard.
+This writes `courses/<code>.json` (gitignored). The **id** lets `lp` recognise the
+course from what the extension copies — if you don't know it, just run a lecture:
+`lp` stops and prints the exact `./lp course … --id …` line to run. `--subject`
+tells the transcriber and the review pass what the lecture is about; without a
+profile they assume a molecular-biology lab course. `--default` makes a course
+the one used when a command names none. More keys (unusual terms, a lexicon) are
+in the README's *Course profiles*.
 
-(Prefer clicking? F12 → **Network** tab → filter `hls` → click the recording →
-copy the request URL. Same thing.)
+## 2. Run a lecture
 
-Each URL is valid for a few hours. Treat it like a password.
-
-## 2. Run it — one command
+On myCourses → **Lecture Recordings**, click the extension icon, then **Copy** on
+the lecture. Paste into the terminal (in `lecture-pipeline/`):
 
 ```bash
-just lecture '<paste one signed .m3u8 url>' lecture-3 \
-     "Lecture 3 — Production via Microbial Fermentation" 2026-09-18
+./lp run '<signed url>' --date 2026-10-01 --course-id 97394
 ```
 
-Arguments: **URL**, a short **slug** (used for every output filename), a human
-**title** (shown on the doc), and the **date**. That runs every stage and
-leaves you `out/lecture-3.study.html` and `out/lecture-3.slides.docx`.
+That's the whole thing: download → transcript (+ review) → slides → notes → both
+study pages, ~20–30 min for a 2–3 h recording. The slug defaults to
+`<course>-<date>` (`--slug` to choose), and with no `--title` the lecture is
+named from its slides once the notes exist. You can also name the course
+directly: `--course BTEC501`. The URL is valid for a few hours — run it soon.
+Several lectures can run at once in separate terminals.
 
 ```bash
-just open lecture-3      # the study page (macOS)
-just open-doc lecture-3  # the Word document
+./lp list                     # every lecture: slides, review status, which files exist
+./lp open btec501-2026-10-01  # the study page       (--audio / --doc / --md / --review)
 ```
+
+No extension? `./lp urls --course BTEC501` prints a DevTools console snippet:
+paste it into the Lecture Recordings tab's console (F12) and it copies the
+signed URLs. Treat them like passwords.
+
+## 3. Study, share, fix
 
 Two study pages are written per lecture:
 
@@ -85,7 +86,8 @@ Two study pages are written per lecture:
   `lectures/<slug>.mp4`; a shared copy just shows the times.
 - `out/<slug>.study-audio.html` — the lecture audio is inside (~11 MB per hour
   of lecture on top, speech-grade HE-AAC), so playback works anywhere. Too big
-  for most email; share it via Drive/AirDrop.
+  for most email; share it via Drive/AirDrop. Recipients should download it and
+  open it in a browser (Drive/Dropbox previews show code; iPhone previews are blank).
 
 On either page: <kbd>←</kbd>/<kbd>→</kbd> change slide, <kbd>T</kbd> flips notes ↔
 transcript, <kbd>/</kbd> searches, <kbd>P</kbd> plays/pauses. A slide's ▶ plays just
@@ -93,22 +95,20 @@ that slide and stops at its end; press play again to keep listening, and with
 *Follow slides* on the page turns to each slide as the lecture reaches it and
 highlights the sentence being spoken. Navigating yourself switches follow off.
 
-## Or run the stages individually
+`out/<slug>.review.md` lists what the review pass fixed and the passages it
+wants a human ear on. A term the transcript keeps getting wrong — typically a
+homophone the review can't confirm by re-listening ("blossom" for BLOSUM) — goes
+into the course's lexicon, then rebuild from the transcript:
 
 ```bash
-just fetch '<url>' lecture-3                                   # -> lectures/lecture-3.mp4
-just transcribe lectures/lecture-3.mp4 lecture-3 "Lecture 3" 2026-09-18
-just slides     lectures/lecture-3.mp4 lecture-3 "Lecture 3" 2026-09-18
-just notes      lecture-3                                      # succinct notes per slide
-just study      lecture-3                                      # -> out/lecture-3.study.html
+./lp fix BTEC501 BLOSUM blossom blossum
+./lp redo btec501-2026-10-01 --from transcribe
 ```
 
-Tweak the doc and page later without re-downloading or re-transcribing (notes
-are cached per slide, so only changed slides are re-written):
-
-```bash
-just redoc lecture-3 "Lecture 3 — new title" 2026-09-18
-```
+`./lp redo <slug> --from <stage>` rebuilds from any stage (fetch, transcribe,
+slides, notes, study) with the lecture's remembered course/title/date; cached
+work is reused, so only what changed costs time or API calls. `--title "…"` or
+`--auto-title` renames it.
 
 ## What each stage does
 
@@ -138,8 +138,12 @@ out/<slug>.study-audio.html  ← the same with the lecture audio inside
 
 ## Troubleshooting
 
-- **`Assembled size != expected` / 403s** — the URL's token expired; grab a fresh
-  one (`just urls`) and re-run `just fetch`.
+- **`Assembled size != expected` / 403s** — the URL's token expired; copy a fresh
+  one and `./lp run` again (or `./lp redo <slug> --from fetch --url '<url>'`).
+- **"No course profile has course_id …"** — first lecture of a new course: run
+  the `./lp course …` line it prints.
+- **Wrong course/lecturer on a doc** — `./lp redo <slug> --course CODE --from transcribe`.
+- **A stage failed** — fix the cause and `./lp redo <slug> --from <that stage>`.
 - **A slide still appears twice** — grouping compares OCR'd slide text and the
   slide pixels with the webcam masked out. Live demos (scrolling a web page) are
   genuinely different screens and stay separate. Without `tesseract` installed

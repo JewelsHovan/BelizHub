@@ -77,6 +77,28 @@ def note_one(client, slide, course):
             "emphasis": [str(x) for x in data.get("emphasis", []) if str(x).strip()]}
 
 
+TITLE_SYSTEM = """Name a university lecture ({course}) from its slide titles and
+notes. Return JSON {{"title": "..."}}: at most 8 words, naming the main topics
+in the order taught, in the style "Scoring matrices (PAM, BLOSUM) & how BLAST
+works". No course code, no date, no "Lecture on"."""
+
+
+def lecture_title(client, slides, course, cache):
+    digest = "\n".join(f"- {(s.get('notes') or {}).get('title') or s.get('title', '')}: "
+                        + " ".join(((s.get("notes") or {}).get("notes") or [])[:2])
+                        for s in slides)
+    key = "title:" + hashlib.sha256(json.dumps([VERSION, course, digest]).encode()).hexdigest()[:16]
+    if key not in cache:
+        r = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "system", "content": TITLE_SYSTEM.format(course=course)},
+                      {"role": "user", "content": digest}],
+            response_format={"type": "json_object"},
+        )
+        cache[key] = json.loads(r.choices[0].message.content or "{}").get("title", "").strip()
+    return cache[key]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -84,6 +106,8 @@ def main():
     ap.add_argument("--course", default="")
     ap.add_argument("--workdir", default="", help="cache dir; default work/<slug>")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--auto-title", action="store_true",
+                    help="name the lecture from its slides (sets the title everywhere)")
     args = ap.parse_args()
 
     from openai import OpenAI
@@ -120,6 +144,15 @@ def main():
 
     for s in slides:
         s["notes"] = cache.get(key_of(s, course))
+    if args.auto_title:
+        try:
+            t = lecture_title(client, slides, course, cache)
+            if t:
+                data["meta"]["title"] = t
+                print(f"Lecture title: {t}")
+        except Exception as exc:
+            print(f"  ! couldn't write a title ({type(exc).__name__}); keeping {data['meta']['title']!r}")
+    cache_path.write_text(json.dumps(cache, indent=1))
     path.write_text(json.dumps(data, indent=1))
     done = sum(1 for s in slides if s["notes"])
     print(f"Wrote notes for {done}/{len(slides)} slides into {path}")

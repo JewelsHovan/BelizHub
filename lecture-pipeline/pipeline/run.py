@@ -268,7 +268,8 @@ def main():
         print("[6b/6] Validating biological names against public registries")
         found = ent.validate(ent.extract(segments))
         conf, susp, _gen = ent.triage(found)
-        profile = course_profile.update(profile, slug, conf)
+        # re-read: another lecture of this course may have saved since we started
+        profile = course_profile.update(course_profile.load(args.course), slug, conf)
         ppath = course_profile.save(profile)
         unresolved = [e for e in susp if e.get("likely_asr_error")]
         print(f"      {len(conf)} name(s) confirmed; {len(unresolved)} resolve "

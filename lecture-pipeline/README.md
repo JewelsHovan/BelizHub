@@ -9,22 +9,25 @@ video are ignored; the repo is public and lecture recordings are not.
 
 ## Quick start
 
-A [`justfile`](justfile) wraps the whole thing. See **[docs/GUIDE.md](docs/GUIDE.md)**
+Everything is driven by **`./lp`** (`./lp --help`). See **[docs/GUIDE.md](docs/GUIDE.md)**
 for the full walkthrough.
 
 ```bash
-just setup                                  # venv + requirements (once)
-just urls                                   # snippet to copy your signed URLs from the browser
-just lecture '<signed .m3u8 url>' lecture-3 "Lecture 3 — Microbial Fermentation" 2026-09-18
+just setup                                                  # venv + requirements (once)
+./lp course BTEC501 --title "…" --lecturer "…" --id <id>    # once per course
+./lp run '<signed url>' --date 2026-10-01 --course-id <id>  # what the Chrome extension copies
+./lp list                                                   # every lecture and what it has
+./lp open <slug>                                            # the study page
 ```
 
-That downloads the recording, trims the dead air, transcribes it, and writes
-`out/lecture-3.study.html` (slide-by-slide study page with a notes/transcript
-toggle) and `out/lecture-3.slides.docx` (the same material as context for an AI).
-Run `just` alone to list every command.
+`./lp run` downloads the recording, trims the dead air, transcribes and reviews
+it, and writes `out/<slug>.study.html` (slide-by-slide study page with a
+notes/transcript toggle; `.study-audio.html` has the lecture audio inside) and
+`out/<slug>.slides.docx` / `.slides.md` (the same material as context for an AI).
 
 Pieces, if you want them separately:
 
+- **`cli.py`** (`./lp`) — runs the stages below, remembers each lecture, manages course profiles.
 - **`fetch_lecture.py`** — download a recording from its signed HLS URL (parallel
   ranged fetch → lossless MP4 → trims trailing dead air).
 - **`pipeline/run.py`** — audio/video → transcript, study map, `.vtt` (below).
@@ -211,11 +214,12 @@ lecturer's "we are going to be" for a decoding loop.
 
 ## Chrome extension (optional)
 
-`extension/` is a Manifest V3 Chrome extension that replaces the `just urls`
+`extension/` is a Manifest V3 Chrome extension that replaces the `./lp urls`
 console snippet. Click the extension icon on a myCourses **Lecture Recordings**
 page and it reads your session token from the LRS app directly, auto-detects
 the course, and lists each recording with a **Copy** button that puts a
-ready-to-paste `just lecture` command on your clipboard. There's also a
+ready-to-paste `./lp run '<url>' --date … --course-id …` command on your
+clipboard (`lp` maps the course id to its course profile). There's also a
 **Find my other courses** scanner and a Debug section (endpoints tried, JWT
 claims, store shapes) for when McGill changes something.
 

@@ -13,16 +13,19 @@
 // The store dump in diagnostics showed the LRS app keeps recordings in
 // component data, not Vuex — hence the component-tree walk.
 
-const JUST_CMD = 'just lecture';
+const LP_CMD = './lp run';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function el(id) { return document.getElementById(id); }
 
-function slugFromDate(date) { return `lecture-${date}`; }
-
-function buildJustCmd(url, slug, title, date) {
-  const safe = s => s.replace(/'/g, "'\\''");
-  return `${JUST_CMD} '${safe(url)}' ${slug} "${safe(title)}" ${date}`;
+// lp maps --course-id to a course profile and names the lecture from its
+// slides when no real title is given (LRS recordings usually have none).
+function buildLpCmd(url, date, courseId, title) {
+  const q = s => `'${String(s).replace(/'/g, "'\\''")}'`;
+  let cmd = `${LP_CMD} ${q(url)} --date ${date}`;
+  if (courseId) cmd += ` --course-id ${courseId}`;
+  if (title && title !== date) cmd += ` --title ${q(title)}`;
+  return cmd;
 }
 
 // --- injected into the LRS frame's MAIN world (must be fully self-contained) ---
@@ -446,7 +449,7 @@ async function exploreLRS() {
 
 // --- popup-side rendering and control flow ---
 
-function renderList(recordings, statusEl, listEl) {
+function renderList(recordings, statusEl, listEl, courseId) {
   const sorted = [...recordings].sort((a, b) =>
     (a.dateTime < b.dateTime ? -1 : a.dateTime > b.dateTime ? 1 : 0));
   if (!sorted.length) { statusEl.textContent = 'No recordings found.'; return; }
@@ -468,7 +471,7 @@ function renderList(recordings, statusEl, listEl) {
     const btn = document.createElement('button');
     btn.textContent = 'Copy';
     btn.addEventListener('click', () => {
-      navigator.clipboard.writeText(buildJustCmd(url, slugFromDate(date), title, date));
+      navigator.clipboard.writeText(buildLpCmd(url, date, courseId, rec.title || rec.name || ''));
       btn.textContent = 'Copied ✓';
       btn.classList.add('copied');
       setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
@@ -541,7 +544,7 @@ async function run(courseIdOverride) {
           const data = r?.result;
           debug.injections.push({ frameId: f.frameId, result: data });
           if (data?.recordings?.length) {
-            renderList(data.recordings, statusEl, listEl);
+            renderList(data.recordings, statusEl, listEl, data.courseId);
             statusEl.textContent =
               `${data.recordings.length} recording(s) — ${data.recSource} (course ID: ${data.courseSource ?? 'override'})`;
             if (data.jwtClaims?.email) {
